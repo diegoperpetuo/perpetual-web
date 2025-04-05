@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from 'lucide-react';
+import { Search } from "lucide-react";
 import DesktopHeaderMenu from "./headerComponents/desktopHeader";
 // import MobileHeaderMenu from "./Header_components/MobileHeaderMenu";
 
 const Header: React.FC = () => {
-    // State to manage the search query, will be used to filter the movies with the API later
+  // State to manage the search query, will be used to filter the movies with the API later
   const [query, setQuery] = useState("");
 
   const Menu = [
@@ -47,14 +47,14 @@ const Header: React.FC = () => {
               ))}
             </ul>
             <div className="relative flex items-center w-full max-w-md">
-  <input
-    className="bg-white p-2 pr-10 pl-4 w-full rounded-lg text-black placeholder:text-black focus:outline-none"
-    type="text"
-    placeholder="Pesquisar produções..."
-    onChange={(e) => setQuery(e.target.value)}
-  />
-  <Search className="absolute right-3 text-black" />
-</div>
+              <input
+                className="bg-white p-2 pr-10 pl-4 w-full rounded-3xl text-black placeholder:text-black focus:outline-none"
+                type="text"
+                placeholder="Pesquisar produções..."
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <Search className="absolute right-3 text-black" />
+            </div>
           </div>
 
           <div className="md:hidden">
