@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import DesktopHeaderMenu from "./headerComponents/desktopHeader";
-// import MobileHeaderMenu from "./Header_components/MobileHeaderMenu";
+import MobileHeaderMenu from "./headerComponents/mobileHeader";
 
 const Header: React.FC = () => {
   // State to manage the search query, will be used to filter the movies with the API later
@@ -58,9 +58,9 @@ const Header: React.FC = () => {
           </div>
 
           <div className="md:hidden">
-            {/* <div className="">
+            <div className="">
               <MobileHeaderMenu Menus={Menu}/>
-            </div> */}
+            </div>
           </div>
         </nav>
       </header>
