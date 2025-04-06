@@ -10,7 +10,10 @@ export default function SearchBar() {
         className="bg-white p-2 pr-10 pl-4 w-full rounded-3xl text-black placeholder:text-black focus:outline-none"
         type="text"
         placeholder="Pesquisar produções..."
-        onChange={(e) => setQuery(e.target.value)}
+        value={query}
+        onChange={(e) => {setQuery(e.target.value); 
+            console.log(e.target.value); 
+        }}
       />
       <Search className="absolute right-3 text-black" />
     </div>
