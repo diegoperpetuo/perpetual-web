@@ -3,7 +3,12 @@ import { X, Menu } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-export default function MobileHeaderMenu({ Menus }) {
+interface MenuItem {
+    name: string;
+    link: string;
+}
+
+export default function MobileHeaderMenu({ Menus }: { Menus: MenuItem[] }) {
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleDrawer = () => {
