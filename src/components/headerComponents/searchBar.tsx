@@ -2,19 +2,27 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 
 export default function SearchBar() {
-  // State to manage the search query, will be used to filter the movies with the API later
+  
   const [query, setQuery] = useState("");
+  const [titles, setTitles] = useState([]);
 
   const fetchData = (value: string) => {
     fetch(`https://api.themoviedb.org/3/search/movie?include_adult=false&page=1&language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5&query=${value}`)
       .then(response => response.json())
       .then(data => {
-        console.log(data);
+        if (data.results) {
+          
+          const filteredTitles = data.results
+            .filter((movie: { title: string }) => movie.title.toLowerCase().includes(value.toLowerCase()))
+            .map((movie: { title: string }) => movie.title);
+
+          setTitles(filteredTitles); 
+        }
       })
       .catch(error => {
         console.error('Error fetching data:', error);
       });
-  }
+  };
 
   const handleChange = (value: string) => {
     setQuery(value);
