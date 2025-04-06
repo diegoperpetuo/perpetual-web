@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { filter } from "framer-motion/client";
 
 export default function SearchBar() {
   
@@ -11,13 +12,12 @@ export default function SearchBar() {
       .then(response => response.json())
       .then(data => {
         if (data.results) {
-          
           const filteredTitles = data.results
             .filter((movie: { title: string }) => movie.title.toLowerCase().includes(value.toLowerCase()))
             .map((movie: { title: string }) => movie.title);
-
           setTitles(filteredTitles); 
-        }
+           console.log(filteredTitles);
+        };
       })
       .catch(error => {
         console.error('Error fetching data:', error);
@@ -37,7 +37,7 @@ export default function SearchBar() {
         placeholder="Pesquisar produções..."
         value={query}
         onChange={(e) => {handleChange(e.target.value); 
-            console.log(e.target.value); 
+            //console.log(e.target.value); 
         }}
       />
       <Search className="absolute right-3 text-black" />
