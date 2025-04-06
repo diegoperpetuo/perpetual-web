@@ -37,7 +37,7 @@ const Header: React.FC = () => {
     <div>
       <header className="h-24 text-[15px] inset-0 flex items-center">
         <nav className="px-3.5 flex items-center justify-between w-full max-w-7xl mx-auto">
-          <div className="hidden md:flex gap-x-2">
+          <div className="hidden md:flex gap-x-2 w-full">
             <ul className="md:flex items-center justify-center gap-x-2">
               {Menu.map((menu) => (
                 <DesktopHeaderMenu menu={menu} key={menu.name} />
