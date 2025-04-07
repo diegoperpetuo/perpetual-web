@@ -27,12 +27,13 @@ function HeroBanner() {
                 })
                 .slice(0, 5); 
 
-            top5.forEach((movie: { id: number; title: string; genre_ids: number; overview: string; release_date: string; vote_average: number }) => {
+            top5.forEach((movie: { id: number; title: string; genre_ids: number; overview: string; release_date: string; vote_average: number; poster_path: string }) => {
                 console.log(`Título: ${movie.title}, 
                             Id dos gêneros: ${movie.genre_ids},
                             Descrição: ${movie.overview}, 
                             Lançamento: ${movie.release_date},
-                            Notas: ${movie.vote_average}`);
+                            Notas: ${movie.vote_average},
+                            Link do poster: https://image.tmdb.org/t/p/w500${movie.poster_path}`);
                 fetchMovieTime(movie.id);
             });
             console.log(top5);
