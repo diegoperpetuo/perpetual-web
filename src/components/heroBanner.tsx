@@ -1,107 +1,171 @@
-import { div } from "framer-motion/client";
-import { Star, Calendar } from "lucide-react";
+import { Star, Calendar, Clock, ArrowRight, ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSwipeable } from "react-swipeable";
+import { motion, AnimatePresence } from "framer-motion";
 
 function HeroBanner() {
-  const [movies, setMovies] = useState<
-    {
-      id: number;
-      runtime: number;
-      title: string;
-      genre_ids: number[];
-      overview: string;
-      release_date: string;
-      vote_average: number;
-      poster_path: string;
-    }[]
-  >([]);
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const fetchGenres = () => {
-    fetch(
-      `https://api.themoviedb.org/3/genre/movie/list?language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5`
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const genreMap: { [key: number]: string } = {};
-        data.genres.forEach((genre: { id: number; name: string }) => {
-          genreMap[genre.id] = genre.name;
-        });
-        setGenres(genreMap);
-      })
-      .catch((error) => {
-        console.error("Error fetching genres:", error);
-      });
+  type Movie = {
+    id: number;
+    runtime: number;
+    title: string;
+    genre_ids: number[];
+    overview: string;
+    release_date: string;
+    vote_average: number;
+    backdrop_path: string;
   };
 
-  const fetchData = () => {
-    fetch(
-      `https://api.themoviedb.org/3/trending/movie/day?language=pt-BR&page=1&api_key=12923231fddd461a9280cdc286a6bee5`
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const today = new Date();
-        const top5 = data["results"]
-          .filter((movie: { release_date: string }) => {
-            const releaseDate = new Date(movie.release_date);
-            return releaseDate <= today;
-          })
-          .slice(0, 5);
-        setMovies(top5);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
+  const fetchGenres = async () => {
+    try {
+      const res = await fetch(
+        `https://api.themoviedb.org/3/genre/movie/list?language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5`
+      );
+      const data = await res.json();
+      const genreMap: { [key: number]: string } = {};
+      data.genres.forEach((g: { id: number; name: string }) => {
+        genreMap[g.id] = g.name;
       });
+      setGenres(genreMap);
+    } catch (error) {
+      console.error("Erro ao buscar gêneros:", error);
+    }
+  };
+
+  const fetchMovies = async () => {
+    try {
+      const res = await fetch(
+        `https://api.themoviedb.org/3/trending/movie/day?language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5`
+      );
+      const data = await res.json();
+
+      const today = new Date();
+      const filtered = data.results
+        .filter((movie: any) => new Date(movie.release_date) <= today)
+        .slice(0, 5);
+
+      const detailed = await Promise.all(
+        filtered.map(async (movie: any) => {
+          const res = await fetch(
+            `https://api.themoviedb.org/3/movie/${movie.id}?language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5`
+          );
+          const details = await res.json();
+          return { ...movie, runtime: details.runtime };
+        })
+      );
+
+      setMovies(detailed);
+    } catch (error) {
+      console.error("Erro ao buscar filmes:", error);
+    }
   };
 
   useEffect(() => {
     fetchGenres();
-    fetchData();
+    fetchMovies();
   }, []);
 
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => setCurrentIndex((i) => (i + 1) % movies.length),
+    onSwipedRight: () =>
+      setCurrentIndex((i) => (i === 0 ? movies.length - 1 : i - 1)),
+    preventScrollOnSwipe: true,
+    trackMouse: true,
+  });
+
+  const handleNext = () => {
+    setCurrentIndex((i) => (i + 1) % movies.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((i) => (i === 0 ? movies.length - 1 : i - 1));
+  };
+
   return (
-    <>
-      {movies.map((movie) => (
-        <div className="relative w-full h-screen mt-4" key={movie.id}>
-          <img
-            className="absolute top-0 left-0 w-full h-full object-cover"
-            src={`https://image.tmdb.org/t/p/original${movie.poster_path}`}
-            alt={movie.title}
-          />
-          <div className="relative z-10 flex flex-col items-start justify-center h-full px-8 text-white bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-            <div>
-              <h1 className="text-4xl font-bold">{movie.title}</h1>
-            </div>
-            <div className="flex items-center gap-4 mt-2 text-sm">
-              <div className="flex items-center gap-4 mt-2 font-bold">
-                
+    <div className="relative touch-none" {...swipeHandlers}>
+      <AnimatePresence mode="wait">
+        {movies.length > 0 && (
+          <motion.div
+            key={movies[currentIndex].id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="relative w-full h-screen"
+          >
+            <img
+              className="absolute top-0 left-0 w-full h-full object-cover"
+              src={`https://image.tmdb.org/t/p/original${movies[currentIndex].backdrop_path}`}
+              alt={`Poster do filme ${movies[currentIndex].title}`}
+            />
+
+            <div className="absolute bottom-12 left-0 w-full px-8 py-6 text-white">
+              <h1 className="text-4xl font-bold">
+                {movies[currentIndex].title}
+              </h1>
+              <div className="flex items-center gap-4 mt-2 text-sm">
                 <div className="flex items-center gap-2">
-                  <span>{new Date(movie.release_date).getFullYear()}</span>
-                  <Calendar color="#fff" />
+                  <Calendar color="#fff" />  
+                  <span>
+                    {new Date(movies[currentIndex].release_date).getFullYear()}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>{movie.vote_average.toFixed(1)}</span>
-                  <Star color="#fff" />
+                  <Star color="#fff" />  
+                  <span>{movies[currentIndex].vote_average.toFixed(1)}</span>
                 </div>
+                {movies[currentIndex].runtime > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Clock color="#fff" /> 
+                    <span>{movies[currentIndex].runtime} min</span>
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap gap-2 mt-4">
-                {movie.genre_ids.map((genreId) => (
+                {movies[currentIndex].genre_ids.map((id) => (
                   <span
-                    key={genreId}
+                    key={id}
                     className="bg-white text-black font-bold rounded-2xl p-2"
                   >
-                    {genres[genreId]}
+                    {genres[id]}
                   </span>
                 ))}
               </div>
+              <div className="w-[40vw] mt-4 min-h-[80px] bg-black/50 p-4 rounded-lg shadow-lg">
+                <p className="text-lg">{movies[currentIndex].overview}</p>
+              </div>
             </div>
-            <div className="w-[40vw]">
-              <p className="mt-4 text-lg">{movie.overview}</p>
-            </div>
-          </div>
-        </div>
-      ))}
-    </>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <button
+        onClick={handlePrev}
+        className="absolute left-4 top-1/2 transform-translate-y-1/2 bg-white p-2 rounded-full hover:bg-red-500 hover:scale-120 shadow-lg transition-transform duration-300"
+      >
+        <ArrowLeft color="#000" size={24} />
+      </button>
+
+      <button
+        onClick={handleNext}
+        className="absolute right-4 top-1/2 transform-translate-y-1/2 bg-white p-2 rounded-full hover:bg-red-500 hover:scale-120 shadow-lg transition-transform duration-300"
+      >
+        <ArrowRight color="#000" size={24} />
+      </button>
+
+      <div className="absolute bottom-4 w-full flex justify-center">
+        {movies.map((_, i) => (
+          <div
+            key={i}
+            className={`transition-all w-3 h-3 rounded-full mx-1 ${
+              currentIndex === i ? "bg-white p-2" : "bg-red-500"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
