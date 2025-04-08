@@ -85,7 +85,7 @@ function HeroBanner() {
   };
 
   return (
-    <div className="relative touch-none" {...swipeHandlers}>
+    <div className="relative touch-none " {...swipeHandlers}>
       <AnimatePresence mode="wait">
         {movies.length > 0 && (
           <motion.div
@@ -101,41 +101,56 @@ function HeroBanner() {
               alt={`Poster do filme ${movies[currentIndex].title}`}
             />
 
-            <div className="absolute bottom-12 left-0 w-full px-8 py-6 text-white">
-              <h1 className="text-4xl font-bold">
-                {movies[currentIndex].title}
-              </h1>
-              <div className="flex items-center gap-4 mt-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <Calendar color="#fff" />  
-                  <span>
-                    {new Date(movies[currentIndex].release_date).getFullYear()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star color="#fff" />  
-                  <span>{movies[currentIndex].vote_average.toFixed(1)}</span>
-                </div>
-                {movies[currentIndex].runtime > 0 && (
+            <div className="absolute inset-0 flex flex-col justify-center lg:justify-end items-center lg:items-start px-4 lg:px-8 py-6 text-white text-center lg:text-left mb-16 h-full">
+              <div className="flex flex-col items-center lg:items-start">
+                <h1 className="text-3xl lg:text-4xl font-bold">
+                  {movies[currentIndex].title}
+                </h1>
+
+                <div className="flex flex-row items-center gap-2 lg:gap-4 mt-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <Clock color="#fff" /> 
-                    <span>{movies[currentIndex].runtime} min</span>
+                    <Calendar color="#fff" />
+                    <span>
+                      {new Date(
+                        movies[currentIndex].release_date
+                      ).getFullYear()}
+                    </span>
                   </div>
-                )}
+                  <div className="flex items-center gap-2">
+                    <Star color="#fff" />
+                    <span>{movies[currentIndex].vote_average.toFixed(1)}</span>
+                  </div>
+                  {movies[currentIndex].runtime > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Clock color="#fff" />
+                      <span>{movies[currentIndex].runtime} min</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap justify-center lg:justify-start gap-2 mt-4">
+                  {movies[currentIndex].genre_ids.map((id) => (
+                    <span
+                      key={id}
+                      className="bg-white text-black font-bold rounded-2xl px-4 py-1"
+                    >
+                      {genres[id]}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2 mt-4">
-                {movies[currentIndex].genre_ids.map((id) => (
-                  <span
-                    key={id}
-                    className="bg-white text-black font-bold rounded-2xl p-2"
-                  >
-                    {genres[id]}
-                  </span>
-                ))}
+
+              <div className="mt-20 lg:mt-6 w-full flex justify-center lg:justify-start">
+                <p
+                  className="bg-black/60 p-4 rounded-xl shadow-lg max-w-[650px] text-base leading-relaxed max-h-[100px] overflow-auto"
+                  style={{
+                    scrollbarWidth: "none",
+                    scrollbarColor: "none",
+                  }}
+                >
+                  {movies[currentIndex].overview}
+                </p>
               </div>
-              <p className="mt-4 bg-black/60 p-4 rounded-xl shadow-lg max-w-[500px] text-base leading-relaxed max-h-[120px] overflow-hidden">
-          {movies[currentIndex].overview}
-        </p>
             </div>
           </motion.div>
         )}
@@ -143,28 +158,29 @@ function HeroBanner() {
 
       <button
         onClick={handlePrev}
-        className="absolute left-4 top-1/2 transform-translate-y-1/2 bg-white p-2 rounded-full hover:bg-red-500 hover:scale-120 shadow-lg transition-transform duration-300"
+        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full hover:bg-red-500 hover:scale-110 shadow-lg transition-transform duration-300"
       >
         <ArrowLeft color="#000" size={24} />
       </button>
 
       <button
         onClick={handleNext}
-        className="absolute right-4 top-1/2 transform-translate-y-1/2 bg-white p-2 rounded-full hover:bg-red-500 hover:scale-120 shadow-lg transition-transform duration-300"
+        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full hover:bg-red-500 hover:scale-110 shadow-lg transition-transform duration-300"
       >
         <ArrowRight color="#000" size={24} />
       </button>
 
-      <div className="absolute bottom-4 w-full flex justify-center">
-        {movies.map((_, i) => (
-          <div
-            key={i}
-            className={`transition-all w-3 h-3 rounded-full mx-1 ${
-              currentIndex === i ? "bg-white p-2" : "bg-red-500"
-            }`}
-          />
-        ))}
-      </div>
+      <div className="absolute bottom-1 w-full flex justify-center">
+  {movies.map((_, i) => (
+    <div
+      key={i}
+      className={`transition-all w-3 h-3 rounded-full mx-1 ${
+        currentIndex === i ? "bg-white p-2" : "bg-red-500"
+      }`}
+    />
+  ))}
+</div>
+
     </div>
   );
 }
