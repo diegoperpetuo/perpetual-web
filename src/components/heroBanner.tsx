@@ -133,9 +133,9 @@ function HeroBanner() {
                   </span>
                 ))}
               </div>
-              <div className="w-[40vw] mt-4 min-h-[80px] bg-black/50 p-4 rounded-lg shadow-lg">
-                <p className="text-lg">{movies[currentIndex].overview}</p>
-              </div>
+              <p className="mt-4 bg-black/60 p-4 rounded-xl shadow-lg max-w-[500px] text-base leading-relaxed max-h-[120px] overflow-hidden">
+          {movies[currentIndex].overview}
+        </p>
             </div>
           </motion.div>
         )}
