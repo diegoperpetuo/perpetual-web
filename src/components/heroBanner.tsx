@@ -1,27 +1,10 @@
 import { div } from "framer-motion/client";
-import { Star, Clock, Calendar } from "lucide-react";
+import { Star, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 
 function HeroBanner() {
 
-    const [movies, setMovies] = useState<{id: number; runtime?:number; title: string; genre_ids: number; overview: string; release_date: string; vote_average: number; poster_path: string}[]>([]);
-    const [runtime, setRunTime] = useState<{id: number; runtime:number}[]>([]);
-
-    const fetchMovieTime = (movieId: number) => {
-        fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR`)
-            .then((response) => response.json())
-            .then((movieTime) => {
-                setMovies((prevMovies) =>
-                    prevMovies.map((movie) =>
-                        movie.id === movieId ? { ...movie, runtime: movieTime.runtime } : movie
-                    )
-                );
-            })
-            .catch((error) => {
-                console.error("Error fetching movie time:", error);
-            });
-    };
-    
+    const [movies, setMovies] = useState<{id: number; runtime:number; title: string; genre_ids: number; overview: string; release_date: string; vote_average: number; poster_path: string}[]>([]);
 
     const fetchData = () => {
         fetch(
@@ -44,7 +27,7 @@ function HeroBanner() {
                             Lançamento: ${movie.release_date},
                             Notas: ${movie.vote_average},
                             Link do poster: https://image.tmdb.org/t/p/w500${movie.poster_path}`);
-                fetchMovieTime(movie.id);
+                
             });
             console.log(top5);
         })
@@ -79,10 +62,6 @@ function HeroBanner() {
                                 <div>
                                     <span>{new Date(movie.release_date).getFullYear()}</span>
                                     <Calendar color="#fff"/>    
-                                </div>
-                                <div>
-                                    <span>{movie.runtime} min</span>
-                                    <Clock color="#fff"/>  
                                 </div>
                                 <div>
                                     <span>{movie.vote_average.toFixed(1)}</span>
