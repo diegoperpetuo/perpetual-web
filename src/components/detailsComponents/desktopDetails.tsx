@@ -3,6 +3,11 @@ import { FaStar } from "react-icons/fa";
 import { FiClock } from "react-icons/fi";
 import { BsFillCalendarDateFill } from "react-icons/bs";
 
+interface Provider {
+  provider_name: string;
+  logo_path: string;
+}
+
 interface MovieData {
   title: string;
   overview: string;
@@ -28,37 +33,50 @@ interface MovieData {
 
 function Details() {
   const [movie, setMovie] = useState<MovieData | null>(null);
+  const [providers, setProviders] = useState<Provider[]>([]);
 
   useEffect(() => {
+    const movieId = 157336; // Interestelar
+
     fetch(
-      `https://api.themoviedb.org/3/movie/${157336}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
+      `https://api.themoviedb.org/3/movie/${movieId}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
     )
       .then((res) => res.json())
       .then((data) => setMovie(data))
       .catch((err) => console.error(err));
+
+    fetch(
+      `https://api.themoviedb.org/3/movie/${movieId}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        const brProviders = data.results?.BR?.flatrate || [];
+        setProviders(brProviders);
+      })
+      .catch((err) => console.error("Erro ao buscar provedores:", err));
   }, []);
 
   if (!movie) return <div className="text-white">Carregando...</div>;
 
   return (
     <div className="bg-neutral-900 text-white min-h-screen px-6 py-10">
-        {movie.videos?.results?.length > 0 && (
+      {movie.videos?.results?.length > 0 && (
         <div className="w-full mb-10 aspect-video max-w-4xl mx-auto">
-            <iframe
+          <iframe
             className="w-full h-full rounded-lg"
             src={`https://www.youtube.com/embed/${
-                movie.videos.results.find(
-                (video) =>
-                    video.type === "Trailer" && video.site === "YouTube"
-                )?.key
+              movie.videos.results.find(
+                (video) => video.type === "Trailer" && video.site === "YouTube"
+              )?.key
             }`}
             title="Trailer do filme"
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-            ></iframe>
+          ></iframe>
         </div>
-        )}
+      )}
+
       <div className="flex flex-col md:flex-row gap-10">
         <div>
           <img
@@ -93,14 +111,12 @@ function Details() {
               <FiClock /> {movie.runtime} min
             </span>
             <span className="flex items-center gap-1 text-sm text-zinc-300">
-              <FaStar/> {movie.vote_average}
+              <FaStar /> {movie.vote_average}
             </span>
           </div>
 
-          {/* Sinopse */}
           <p className="text-zinc-300 leading-relaxed">{movie.overview}</p>
 
-          {/* Infos técnicas */}
           <div className="space-y-2 text-sm text-zinc-300">
             <p>
               <strong className="text-white">Country:</strong>{" "}
@@ -124,14 +140,33 @@ function Details() {
             </p>
             <p>
               <strong className="text-white">Cast:</strong>{" "}
-              {movie.credits.cast
-                .slice(0, 5)
-                .map((a) => a.name)
-                .join(", ")}
+              {movie.credits.cast.slice(0, 5).map((a) => a.name).join(", ")}
             </p>
           </div>
         </div>
       </div>
+
+      {providers.length > 0 && (
+        <div className="mt-12">
+            <h2 className="text-xl font-semibold mb-6">Onde assistir</h2>
+            <div className="space-y-4">
+            {providers.map((provider) => (
+                <div
+                key={provider.provider_name}
+                className="flex items-center gap-4"
+                >
+                <img
+                    src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
+                    alt={provider.provider_name}
+                    className="w-10 h-10 object-contain"
+                />
+                <span className="text-lg font-medium">{provider.provider_name}</span>
+                </div>
+            ))}
+            </div>
+        </div>
+     )}
+
     </div>
   );
 }
