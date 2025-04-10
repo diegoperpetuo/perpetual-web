@@ -10,7 +10,7 @@ function App() {
       <Header/>
       <Routes>
         <Route path='/' element={<HomePage/>}/>
-        <Route path='/detalhes/:id' element={<DetailsPage/>}/>
+        <Route path="/detalhes/:mediaType/:id" element={<DetailsPage />} />
       </Routes>
     </div>
   );

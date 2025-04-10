@@ -33,23 +33,21 @@ interface MovieData {
 
 function DetailsPage() {
 
-  const { id } = useParams<{ id: string }>();
+  const { id, mediaType } = useParams<{ id: string; mediaType: string }>();
 
   const [movie, setMovie] = useState<MovieData | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
 
   useEffect(() => {
-    
-  
     fetch(
-      `https://api.themoviedb.org/3/movie/${id}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
+      `https://api.themoviedb.org/3/${mediaType}/${id}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
     )
       .then((res) => res.json())
       .then((data) => setMovie(data))
       .catch((err) => console.error(err));
   
     fetch(
-      `https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
+      `https://api.themoviedb.org/3/${mediaType}/${id}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -57,7 +55,7 @@ function DetailsPage() {
         setProviders(brProviders);
       })
       .catch((err) => console.error("Erro ao buscar provedores:", err));
-  }, [id]);
+  }, [id, mediaType]);
   
 
   if (!movie) {

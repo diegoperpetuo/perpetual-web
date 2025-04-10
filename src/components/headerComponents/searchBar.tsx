@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 
 interface SearchBarProps {
   query: string;
-  titles: { id: string; title: string }[];
+  titles: { id: string; title: string; media_type: string }[];
   handleChange: (value: string) => void;
 }
+
 
 export default function SearchBar({ query, titles, handleChange }: SearchBarProps) {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function SearchBar({ query, titles, handleChange }: SearchBarProp
           <ul>
             {titles.map((movie) => (
               <li
-                onClick={() => navigate(`/detalhes/${movie.id}`)}
+              onClick={() => navigate(`/detalhes/${movie.media_type}/${movie.id}`)}
                 key={movie.id}
                 className="p-2 hover:bg-gray-200 cursor-pointer text-black"
               >

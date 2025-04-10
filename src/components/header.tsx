@@ -7,7 +7,7 @@ import { useState } from "react";
 
 const Header: React.FC = () => {
   const [query, setQuery] = useState("");
-  const [titles, setTitles] = useState<{ id: string; title: string }[]>([]);
+  const [titles, setTitles] = useState<{ id: string; title: string; media_type: string }[]>([]);
 
   const Menu = [
     { name: "Início", link: "/" },
@@ -20,20 +20,25 @@ const Header: React.FC = () => {
 
   const fetchData = (value: string) => {
     fetch(
-      `https://api.themoviedb.org/3/search/movie?include_adult=false&page=1&language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5&query=${value}`
+      `https://api.themoviedb.org/3/search/multi?include_adult=false&page=1&language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5&query=${value}`
     )
       .then((response) => response.json())
       .then((data) => {
         if (data.results) {
           const filteredTitles = data.results
-            .filter((movie: { title: string }) =>
-              movie.title.toLowerCase().includes(value.toLowerCase())
+            .filter(
+              (item: { title?: string; name?: string; media_type: string }) =>
+                (item.title || item.name) &&
+                item.media_type !== "person" &&
+                (item.title?.toLowerCase().includes(value.toLowerCase()) ||
+                  item.name?.toLowerCase().includes(value.toLowerCase()))
             )
-            .map((movie: { id: string; title: string }) => ({
-              id: movie.id,
-              title: movie.title
+            .map((item: { id: string; title?: string; name?: string; media_type: string }) => ({
+              id: item.id,
+              title: item.title || item.name,
+              media_type: item.media_type,
             }));
-            
+  
           setTitles(filteredTitles);
         }
       })
@@ -41,6 +46,7 @@ const Header: React.FC = () => {
         console.error("Error fetching data:", error);
       });
   };
+  
 
   const handleChange = (value: string) => {
     setQuery(value);

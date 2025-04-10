@@ -1,5 +1,6 @@
 import { Clock, PlayCircle, Star } from "lucide-react";
 import { MovieResult, TvResult } from "moviedb-promise";
+import { useNavigate } from "react-router-dom";
 
 interface MovieCardProps {
   movie: MovieResult | TvResult;
@@ -11,8 +12,13 @@ interface MovieCardProps {
 const MovieCard = ({ movie, showGenres, showHD, genresMap }: MovieCardProps) => {
   const displayTitle = (movie as MovieResult).title || (movie as TvResult).name;
 
+  const mediaType = (movie as MovieResult).title ? "movie" : "tv";
+  const navigate = useNavigate();
+
   return (
-    <div className="relative w-40 sm:w-48 text-white flex-shrink-0 transition-transform transform hover:scale-105">
+    <div 
+    onClick={() => navigate(`/detalhes/${mediaType}/${movie.id}`)}
+    className="relative w-40 sm:w-48 text-white flex-shrink-0 transition-transform transform hover:scale-105">
       <div className="overflow-hidden rounded-xl">
         <img
           src={`https://image.tmdb.org/t/p/w500${movie.poster_path || movie.backdrop_path}`}
