@@ -7,7 +7,7 @@ import { useState } from "react";
 
 const Header: React.FC = () => {
   const [query, setQuery] = useState("");
-  const [titles, setTitles] = useState<string[]>([]);
+  const [titles, setTitles] = useState([]);
 
   const Menu = [
     { name: "Início", link: "/" },

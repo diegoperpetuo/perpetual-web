@@ -1,11 +1,12 @@
 import Details from "./components/detailsComponents/desktopDetails";
 import Header from "./components/header";
+import HeroBanner from "./components/heroBanner";
 
 function App() {
   return (
     <div>
       <Header/>
-      <Details/>
+      <HeroBanner/>
     </div>
   );
 }
