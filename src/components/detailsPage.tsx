@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaStar, FaClock, FaCalendarAlt } from "react-icons/fa";
+import { Star, Calendar, Clock } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 interface Provider {
@@ -49,12 +49,12 @@ function DetailsPage() {
           ),
           fetch(
             `https://api.themoviedb.org/3/${media_type}/${id}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
-          )
+          ),
         ]);
 
         const movieData = await movieRes.json();
         const providersData = await providersRes.json();
-        
+
         setMovie(movieData);
         setProviders(providersData.results?.BR?.flatrate || []);
       } catch (err) {
@@ -80,9 +80,7 @@ function DetailsPage() {
   if (!movie) {
     return (
       <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
-        <div className="text-xl">
-          Não foi possível carregar os detalhes.
-        </div>
+        <div className="text-xl">Não foi possível carregar os detalhes.</div>
       </div>
     );
   }
@@ -140,18 +138,18 @@ function DetailsPage() {
 
             {releaseDate && (
               <span className="flex items-center gap-1 text-sm text-zinc-300 ml-2 sm:ml-4">
-                <FaCalendarAlt /> {new Date(releaseDate).getFullYear()}
+                <Calendar /> {new Date(releaseDate).getFullYear()}
               </span>
             )}
 
             {runtime && (
               <span className="flex items-center gap-1 text-sm text-zinc-300">
-                <FaClock /> {runtime} min
+                <Clock /> {runtime} min
               </span>
             )}
 
             <span className="flex items-center gap-1 text-sm text-zinc-300">
-              <FaStar /> {movie.vote_average.toFixed(1)}
+              <Star /> {movie.vote_average.toFixed(1)}
             </span>
           </div>
 
@@ -160,18 +158,17 @@ function DetailsPage() {
           </p>
 
           <div className="space-y-2 text-sm text-zinc-300">
-            {movie.production_countries?.length > 0 && (
-              <p>
-                <strong className="text-white">País:</strong>{" "}
-                {movie.production_countries.map((c) => c.name).join(", ")}
-              </p>
-            )}
-            
+            <p>
+              <strong className="text-white">País:</strong>{" "}
+              {movie.production_countries
+                ? movie.production_countries.map((c) => c.name).join(", ")
+                : "Não disponível"}
+            </p>
             <p>
               <strong className="text-white">Gêneros:</strong>{" "}
               {movie.genres.map((g) => g.name).join(", ")}
             </p>
-            
+
             {releaseDate && (
               <p>
                 <strong className="text-white">Data de lançamento:</strong>{" "}
@@ -182,18 +179,24 @@ function DetailsPage() {
                 })}
               </p>
             )}
-            
+
             {movie.production_companies.length > 0 && (
               <p>
                 <strong className="text-white">Produção:</strong>{" "}
-                {movie.production_companies.slice(0, 3).map((p) => p.name).join(", ")}
+                {movie.production_companies
+                  .slice(0, 3)
+                  .map((p) => p.name)
+                  .join(", ")}
               </p>
             )}
-            
+
             {movie.credits.cast.length > 0 && (
               <p>
                 <strong className="text-white">Elenco principal:</strong>{" "}
-                {movie.credits.cast.slice(0, 5).map((a) => a.name).join(", ")}
+                {movie.credits.cast
+                  .slice(0, 5)
+                  .map((a) => a.name)
+                  .join(", ")}
               </p>
             )}
           </div>
@@ -202,7 +205,9 @@ function DetailsPage() {
 
       {providers.length > 0 && (
         <div className="mt-8 sm:mt-12">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Onde assistir</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+            Onde assistir
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {providers.map((provider) => (
               <div
