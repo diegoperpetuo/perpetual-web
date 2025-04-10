@@ -18,7 +18,7 @@ const MovieCard = ({ movie, showGenres, showHD, genresMap }: MovieCardProps) => 
   return (
     <div 
     onClick={() => navigate(`/detalhes/${mediaType}/${movie.id}`)}
-    className="relative w-40 sm:w-48 text-white flex-shrink-0 transition-transform transform hover:scale-105">
+    className="relative w-40 sm:w-48 text-white flex-shrink-0 transition-transform transform hover:scale-105 hover:cursor-pointer">
       <div className="overflow-hidden rounded-xl">
         <img
           src={`https://image.tmdb.org/t/p/w500${movie.poster_path || movie.backdrop_path}`}
