@@ -1,54 +1,35 @@
-# React + TypeScript + Vite
+# 🎬 PerpetualWeb
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Um aplicativo de catálogo de filmes e séries que consome a API do [The Movie Database (TMDb)](https://www.themoviedb.org/), desenvolvido com React + TypeScript. O projeto permite visualizar detalhes completos de produções, como trailers, elenco, provedores de streaming e muito mais.
 
-Currently, two official plugins are available:
+## ✨ Funcionalidades
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Exibição dos filmes em destaque/trending no Hero com swipe (mobile e desktop)
+- Página de detalhes com trailer, elenco, provedores, sinopse e mais
+- Barra de busca funcional com redirecionamento para a página de detalhes
+- Suporte tanto para **filmes** quanto para **séries**
+- Animações com `framer-motion`
+- Navegação com `react-router-dom`
+- Design responsivo e estiloso com Tailwind CSS
 
-## Expanding the ESLint configuration
+## 🧪 Tecnologias
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- React
+- TypeScript
+- Tailwind CSS
+- Framer Motion
+- React Router DOM
+- TMDb API
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 📁 Estrutura de pastas
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+```bash
+src/
+├── assets/            # Imagens e mídias estáticas
+├── components/                 # Componentes reutilizáveis e páginas principais
+│   ├── header.tsx              # Componente fixo do topo com barra de busca
+│   ├── heroBanner.tsx          # Banner principal com filmes em destaque
+│   ├── homePage.tsx            # Página principal exibida na rota "/"
+│   └── detailsPage.tsx         # Página de detalhes do filme/série
+├── App.tsx            # Arquivo principal da aplicação
+├── main.tsx           # Ponto de entrada da aplicação
