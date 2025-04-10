@@ -1,5 +1,6 @@
 import { Star, Calendar, Clock, ArrowRight, ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSwipeable } from "react-swipeable";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -7,6 +8,8 @@ function HeroBanner() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const navigate = useNavigate();
 
   type Movie = {
     id: number;
@@ -85,7 +88,9 @@ function HeroBanner() {
   };
 
   return (
-    <div className="relative touch-none " {...swipeHandlers}>
+    <div className="relative touch-none " {...swipeHandlers}
+            
+      >
       <AnimatePresence mode="wait">
         {movies.length > 0 && (
           <motion.div
@@ -93,7 +98,8 @@ function HeroBanner() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="relative w-full h-screen"
+            onClick={() => navigate(`/detalhes/movie/${movies[currentIndex].id}`)}
+            className="relative w-full h-screen cursor-pointer"
           >
             <img
               className="absolute top-0 left-0 w-full h-full object-cover"
