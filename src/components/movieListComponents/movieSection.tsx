@@ -68,7 +68,7 @@ const MovieSection = ({ title, type }: { title: string; type: SectionType }) => 
           <ChevronLeft size={24} />
         </button>
         <div
-          className="flex gap-4 overflow-x-auto overflow-y-hidden scrollbar-hide px-4 no-scrollbar py-4"
+          className="flex gap-4 overflow-x-hidden overflow-y-hidden scrollbar-hide px-4 no-scrollbar py-4"
           ref={carouselRef}
         >
           {items.map((item) => (
