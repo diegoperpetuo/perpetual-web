@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Star, Calendar, Clock } from "lucide-react";
+import { FaStar, FaClock, FaCalendarAlt } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 
 interface Provider {
@@ -34,33 +34,40 @@ interface ProductionData {
 }
 
 function DetailsPage() {
-
-  
   const { id, media_type } = useParams<{ id: string; media_type: string }>();
-
   const [movie, setMovie] = useState<ProductionData | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch(
-      `https://api.themoviedb.org/3/${media_type}/${id}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
-    )
-      .then((res) => res.json())
-      .then((data) => setMovie(data))
-      .catch((err) => console.error(err));
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [movieRes, providersRes] = await Promise.all([
+          fetch(
+            `https://api.themoviedb.org/3/${media_type}/${id}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
+          ),
+          fetch(
+            `https://api.themoviedb.org/3/${media_type}/${id}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
+          )
+        ]);
 
-    fetch(
-      `https://api.themoviedb.org/3/${media_type}/${id}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        const brProviders = data.results?.BR?.flatrate || [];
-        setProviders(brProviders);
-      })
-      .catch((err) => console.error("Erro ao buscar provedores:", err));
+        const movieData = await movieRes.json();
+        const providersData = await providersRes.json();
+        
+        setMovie(movieData);
+        setProviders(providersData.results?.BR?.flatrate || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, [id, media_type]);
 
-  if (!movie) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
         <div className="animate-pulse text-xl">
@@ -70,40 +77,53 @@ function DetailsPage() {
     );
   }
 
+  if (!movie) {
+    return (
+      <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
+        <div className="text-xl">
+          Não foi possível carregar os detalhes.
+        </div>
+      </div>
+    );
+  }
+
   const trailerKey = movie.videos?.results.find(
     (video) => video.type === "Trailer" && video.site === "YouTube"
   )?.key;
 
+  const releaseDate = movie.release_date || movie.first_air_date;
+  const runtime = movie.runtime || movie.episode_run_time?.[0];
+  const title = movie.title || movie.name || "Sem título";
+
   return (
-    <div className="bg-neutral-900 text-white min-h-screen px-6 py-10">
+    <div className="bg-neutral-900 text-white min-h-screen px-4 sm:px-6 py-8 sm:py-10">
       {trailerKey && (
-        <div className="w-full mb-10 aspect-video max-w-4xl mx-auto">
+        <div className="w-full mb-8 sm:mb-10 aspect-video max-w-4xl mx-auto">
           <iframe
             className="w-full h-full rounded-lg"
             src={`https://www.youtube.com/embed/${trailerKey}`}
-            title="Trailer"
-            frameBorder="0"
+            title={`Trailer de ${title}`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           ></iframe>
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-10">
-        <div>
+      <div className="flex flex-col md:flex-row gap-6 sm:gap-10">
+        <div className="flex justify-center md:block">
           <img
             src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-            alt={movie.title || movie.name}
-            className="rounded-lg w-full md:w-[300px] shadow-lg"
+            alt={title}
+            className="rounded-lg w-full max-w-[300px] md:w-[300px] shadow-lg"
           />
         </div>
 
-        <div className="flex-1 space-y-6">
-          <div className="flex justify-between items-start">
-            <h1 className="text-3xl font-bold">
-              {(movie.title || movie.name)?.toUpperCase()}
+        <div className="flex-1 space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold">
+              {title.toUpperCase()}
             </h1>
-            <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium">
+            <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium w-full sm:w-auto">
               + Adicionar aos favoritos
             </button>
           </div>
@@ -112,72 +132,91 @@ function DetailsPage() {
             {movie.genres.map((genre, index) => (
               <span
                 key={index}
-                className="bg-white text-black px-3 py-1 rounded-full text-sm font-medium"
+                className="bg-white text-black px-3 py-1 rounded-full text-xs sm:text-sm font-medium"
               >
                 {genre.name}
               </span>
             ))}
 
-            <span className="flex items-center gap-1 text-sm text-zinc-300 ml-4">
-              <Calendar />{" "}
-              {new Date(movie.release_date || movie.first_air_date || "").getFullYear()}
-            </span>
+            {releaseDate && (
+              <span className="flex items-center gap-1 text-sm text-zinc-300 ml-2 sm:ml-4">
+                <FaCalendarAlt /> {new Date(releaseDate).getFullYear()}
+              </span>
+            )}
+
+            {runtime && (
+              <span className="flex items-center gap-1 text-sm text-zinc-300">
+                <FaClock /> {runtime} min
+              </span>
+            )}
 
             <span className="flex items-center gap-1 text-sm text-zinc-300">
-              <Clock /> {movie.runtime || movie.episode_run_time?.[0] || "?"} min
-            </span>
-
-            <span className="flex items-center gap-1 text-sm text-zinc-300">
-              <Star /> {movie.vote_average.toFixed(1)}
+              <FaStar /> {movie.vote_average.toFixed(1)}
             </span>
           </div>
 
-          <p className="text-zinc-300 leading-relaxed">{movie.overview}</p>
+          <p className="text-zinc-300 leading-relaxed text-sm sm:text-base">
+            {movie.overview || "Sinopse não disponível."}
+          </p>
 
           <div className="space-y-2 text-sm text-zinc-300">
+            {movie.production_countries?.length > 0 && (
+              <p>
+                <strong className="text-white">País:</strong>{" "}
+                {movie.production_countries.map((c) => c.name).join(", ")}
+              </p>
+            )}
+            
             <p>
-              <strong className="text-white">Country:</strong>{" "}
-              {movie.production_countries?.map((c) => c.name).join(", ") || "—"}
-            </p>
-            <p>
-              <strong className="text-white">Genre:</strong>{" "}
+              <strong className="text-white">Gêneros:</strong>{" "}
               {movie.genres.map((g) => g.name).join(", ")}
             </p>
-            <p>
-              <strong className="text-white">Date Release:</strong>{" "}
-              {new Date(movie.release_date || movie.first_air_date || "").toLocaleDateString(
-                "en-US",
-                {
-                  month: "short",
+            
+            {releaseDate && (
+              <p>
+                <strong className="text-white">Data de lançamento:</strong>{" "}
+                {new Date(releaseDate).toLocaleDateString("pt-BR", {
                   day: "2-digit",
+                  month: "long",
                   year: "numeric",
-                }
-              )}
-            </p>
-            <p>
-              <strong className="text-white">Production:</strong>{" "}
-              {movie.production_companies.map((p) => p.name).join(", ") || "—"}
-            </p>
-            <p>
-              <strong className="text-white">Cast:</strong>{" "}
-              {movie.credits.cast.slice(0, 5).map((a) => a.name).join(", ")}
-            </p>
+                })}
+              </p>
+            )}
+            
+            {movie.production_companies.length > 0 && (
+              <p>
+                <strong className="text-white">Produção:</strong>{" "}
+                {movie.production_companies.slice(0, 3).map((p) => p.name).join(", ")}
+              </p>
+            )}
+            
+            {movie.credits.cast.length > 0 && (
+              <p>
+                <strong className="text-white">Elenco principal:</strong>{" "}
+                {movie.credits.cast.slice(0, 5).map((a) => a.name).join(", ")}
+              </p>
+            )}
           </div>
         </div>
       </div>
 
       {providers.length > 0 && (
-        <div className="mt-12">
-          <h2 className="text-xl font-semibold mb-6">Onde assistir</h2>
-          <div className="space-y-4">
+        <div className="mt-8 sm:mt-12">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Onde assistir</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {providers.map((provider) => (
-              <div key={provider.provider_name} className="flex items-center gap-4">
+              <div
+                key={provider.provider_name}
+                className="flex items-center gap-3 bg-neutral-800 p-3 rounded-lg"
+              >
                 <img
                   src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
                   alt={provider.provider_name}
-                  className="w-10 h-10 object-contain"
+                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
                 />
-                <span className="text-lg font-medium">{provider.provider_name}</span>
+                <span className="text-sm sm:text-base font-medium">
+                  {provider.provider_name}
+                </span>
               </div>
             ))}
           </div>
