@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Star, Calendar, Clock} from "lucide-react";
+import { useParams } from "react-router-dom";
 
 interface Provider {
   provider_name: string;
@@ -30,22 +31,25 @@ interface MovieData {
   };
 }
 
-function Details() {
+function DetailsPage() {
+
+  const { id } = useParams<{ id: string }>();
+
   const [movie, setMovie] = useState<MovieData | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
 
   useEffect(() => {
-    const movieId = 157336; // Interestelar
-
+    
+  
     fetch(
-      `https://api.themoviedb.org/3/movie/${movieId}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
+      `https://api.themoviedb.org/3/movie/${id}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
     )
       .then((res) => res.json())
       .then((data) => setMovie(data))
       .catch((err) => console.error(err));
-
+  
     fetch(
-      `https://api.themoviedb.org/3/movie/${movieId}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
+      `https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -53,9 +57,17 @@ function Details() {
         setProviders(brProviders);
       })
       .catch((err) => console.error("Erro ao buscar provedores:", err));
-  }, []);
+  }, [id]);
+  
 
-  if (!movie) return <div className="text-white">Carregando...</div>;
+  if (!movie) {
+    return (
+      <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
+        <div className="animate-pulse text-xl">Carregando detalhes do filme...</div>
+      </div>
+    );
+  }
+  
 
   return (
     <div className="bg-neutral-900 text-white min-h-screen px-6 py-10">
@@ -170,4 +182,4 @@ function Details() {
   );
 }
 
-export default Details;
+export default DetailsPage;

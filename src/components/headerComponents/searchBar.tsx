@@ -1,12 +1,15 @@
 import { Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface SearchBarProps {
   query: string;
-  titles: string[];
+  titles: { id: string; title: string }[];
   handleChange: (value: string) => void;
 }
 
 export default function SearchBar({ query, titles, handleChange }: SearchBarProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="relative flex flex-col items-center w-full max-w-md">
       <div className="relative w-full">
@@ -19,15 +22,17 @@ export default function SearchBar({ query, titles, handleChange }: SearchBarProp
         />
         <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black" />
       </div>
+
       {titles.length > 0 && (
         <div className="absolute top-full mt-2 w-full bg-white flex flex-col rounded-lg shadow-lg max-h-80 overflow-y-scroll z-50">
           <ul>
-            {titles.map((title, index) => (
+            {titles.map((movie) => (
               <li
-                key={index}
+                onClick={() => navigate(`/detalhes/${movie.id}`)}
+                key={movie.id}
                 className="p-2 hover:bg-gray-200 cursor-pointer text-black"
               >
-                {title}
+                {movie.title}
               </li>
             ))}
           </ul>

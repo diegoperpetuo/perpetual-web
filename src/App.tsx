@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import Header from "./components/header";
 import HeroBanner from "./components/heroBanner";
-import Details from "./components/detailsPage";
+import DetailsPage from './components/detailsPage';
 
 function App() {
   return (
@@ -9,7 +9,7 @@ function App() {
       <Header/>
       <Routes>
         <Route path='/' element={<HeroBanner/>}/>
-        <Route path='/detalhes/:id' element={<Details/>}/>
+        <Route path='/detalhes/:id' element={<DetailsPage/>}/>
       </Routes>
     </div>
   );

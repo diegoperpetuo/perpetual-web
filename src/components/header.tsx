@@ -7,7 +7,7 @@ import { useState } from "react";
 
 const Header: React.FC = () => {
   const [query, setQuery] = useState("");
-  const [titles, setTitles] = useState([]);
+  const [titles, setTitles] = useState<{ id: string; title: string }[]>([]);
 
   const Menu = [
     { name: "Início", link: "/" },
@@ -29,7 +29,11 @@ const Header: React.FC = () => {
             .filter((movie: { title: string }) =>
               movie.title.toLowerCase().includes(value.toLowerCase())
             )
-            .map((movie: { title: string }) => movie.title);
+            .map((movie: { id: string; title: string }) => ({
+              id: movie.id,
+              title: movie.title
+            }));
+            
           setTitles(filteredTitles);
         }
       })
