@@ -32,11 +32,11 @@ const MovieSection = ({ title, type }: { title: string; type: SectionType }) => 
     const fetchData = async () => {
       let res;
       if (type === "popular") {
-        res = await moviedb.moviePopular();
+        res = await moviedb.moviePopular({language: "pt-BR"});
       } else if (type === "now_playing") {
-        res = await moviedb.movieNowPlaying();
+        res = await moviedb.movieNowPlaying({language: "pt-BR"});
       } else {
-        res = await moviedb.tvPopular();
+        res = await moviedb.tvPopular({language: "pt-BR"});
       }
       setItems(res.results || []);
     };
