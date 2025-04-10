@@ -19,6 +19,7 @@ interface MovieData {
   credits: {
     cast: { name: string; character: string }[];
   };
+  
   videos: {
     results: {
       key: string;
