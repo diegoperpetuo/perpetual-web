@@ -3,13 +3,12 @@ import { useNavigate } from "react-router-dom";
 
 interface SearchBarProps {
   query: string;
-  setQuery: (value: string) => void;
   titles: { id: string; title: string; media_type: string }[];
   handleChange: (value: string) => void;
 }
 
 
-export default function SearchBar({ query,setQuery, titles, handleChange }: SearchBarProps) {
+export default function SearchBar({ query, titles, handleChange }: SearchBarProps) {
   
   const navigate = useNavigate();
   
@@ -34,7 +33,7 @@ export default function SearchBar({ query,setQuery, titles, handleChange }: Sear
               <li
               onClick={() => {
                 navigate(`/detalhes/${movie.media_type}/${movie.id}`);
-                setQuery(""); 
+                handleChange("");
               }}
               
                 key={movie.id}

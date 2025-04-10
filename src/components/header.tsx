@@ -9,6 +9,7 @@ const Header: React.FC = () => {
   const [query, setQuery] = useState("");
   const [titles, setTitles] = useState<{ id: string; title: string; media_type: string }[]>([]);
 
+
   const Menu = [
     { name: "Início", link: "/" },
     { name: "Gênero", link: "" },
@@ -50,6 +51,12 @@ const Header: React.FC = () => {
 
   const handleChange = (value: string) => {
     setQuery(value);
+    
+    if (value.trim() === ""){
+      setTitles([]);
+      return;
+    }
+
     fetchData(value);
   };
 
@@ -64,7 +71,7 @@ const Header: React.FC = () => {
               ))}
             </ul>
             
-            <SearchBar query={query} titles={titles} setQuery={setQuery} handleChange={handleChange} />
+            <SearchBar query={query} titles={titles} handleChange={handleChange} />
           </div>
 
           <div className="md:hidden gap-x-2 flex justify-between items-center w-full">
@@ -72,7 +79,7 @@ const Header: React.FC = () => {
               <MobileHeaderMenu Menus={Menu} />
             </div>
             
-            <SearchBar query={query} titles={titles} setQuery={setQuery} handleChange={handleChange} />
+            <SearchBar query={query} titles={titles} handleChange={handleChange} />
           </div>
         </nav>
       </header>
