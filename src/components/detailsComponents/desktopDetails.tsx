@@ -89,8 +89,8 @@ function Details() {
         <div className="flex-1 space-y-6">
           <div className="flex justify-between items-start">
             <h1 className="text-3xl font-bold">{movie.title.toUpperCase()}</h1>
-            <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium">
-              + Adicionar aos favoritos
+            <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium w-full sm:w-auto">
+             + Adicionar aos favoritos
             </button>
           </div>
 
@@ -171,4 +171,4 @@ function Details() {
   );
 }
 
-export default Details;
+export default Details; 
