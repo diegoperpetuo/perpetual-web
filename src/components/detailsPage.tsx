@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Star, Calendar, Clock} from "lucide-react";
+import { Star, Calendar, Clock } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 interface Provider {
@@ -7,20 +7,22 @@ interface Provider {
   logo_path: string;
 }
 
-interface MovieData {
-  title: string;
+interface ProductionData {
+  title?: string;
+  name?: string;
   overview: string;
-  release_date: string;
-  runtime: number;
+  release_date?: string;
+  first_air_date?: string;
+  runtime?: number;
+  episode_run_time?: number[];
   vote_average: number;
   genres: { name: string }[];
-  production_countries: { name: string }[];
+  production_countries?: { name: string }[];
   production_companies: { name: string }[];
   poster_path: string;
   credits: {
     cast: { name: string; character: string }[];
   };
-  
   videos: {
     results: {
       key: string;
@@ -33,21 +35,22 @@ interface MovieData {
 
 function DetailsPage() {
 
-  const { id, mediaType } = useParams<{ id: string; mediaType: string }>();
+  
+  const { id, media_type } = useParams<{ id: string; media_type: string }>();
 
-  const [movie, setMovie] = useState<MovieData | null>(null);
+  const [movie, setMovie] = useState<ProductionData | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
 
   useEffect(() => {
     fetch(
-      `https://api.themoviedb.org/3/${mediaType}/${id}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
+      `https://api.themoviedb.org/3/${media_type}/${id}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
     )
       .then((res) => res.json())
       .then((data) => setMovie(data))
       .catch((err) => console.error(err));
-  
+
     fetch(
-      `https://api.themoviedb.org/3/${mediaType}/${id}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
+      `https://api.themoviedb.org/3/${media_type}/${id}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
     )
       .then((res) => res.json())
       .then((data) => {
@@ -55,30 +58,30 @@ function DetailsPage() {
         setProviders(brProviders);
       })
       .catch((err) => console.error("Erro ao buscar provedores:", err));
-  }, [id, mediaType]);
-  
+  }, [id, media_type]);
 
   if (!movie) {
     return (
       <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
-        <div className="animate-pulse text-xl">Carregando detalhes do filme...</div>
+        <div className="animate-pulse text-xl">
+          Carregando detalhes do {media_type === "tv" ? "programa" : "filme"}...
+        </div>
       </div>
     );
   }
-  
+
+  const trailerKey = movie.videos?.results.find(
+    (video) => video.type === "Trailer" && video.site === "YouTube"
+  )?.key;
 
   return (
     <div className="bg-neutral-900 text-white min-h-screen px-6 py-10">
-      {movie.videos?.results?.length > 0 && (
+      {trailerKey && (
         <div className="w-full mb-10 aspect-video max-w-4xl mx-auto">
           <iframe
             className="w-full h-full rounded-lg"
-            src={`https://www.youtube.com/embed/${
-              movie.videos.results.find(
-                (video) => video.type === "Trailer" && video.site === "YouTube"
-              )?.key
-            }`}
-            title="Trailer do filme"
+            src={`https://www.youtube.com/embed/${trailerKey}`}
+            title="Trailer"
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -90,14 +93,16 @@ function DetailsPage() {
         <div>
           <img
             src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-            alt={movie.title}
+            alt={movie.title || movie.name}
             className="rounded-lg w-full md:w-[300px] shadow-lg"
           />
         </div>
 
         <div className="flex-1 space-y-6">
           <div className="flex justify-between items-start">
-            <h1 className="text-3xl font-bold">{movie.title.toUpperCase()}</h1>
+            <h1 className="text-3xl font-bold">
+              {(movie.title || movie.name)?.toUpperCase()}
+            </h1>
             <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium">
               + Adicionar aos favoritos
             </button>
@@ -112,15 +117,18 @@ function DetailsPage() {
                 {genre.name}
               </span>
             ))}
+
             <span className="flex items-center gap-1 text-sm text-zinc-300 ml-4">
               <Calendar />{" "}
-              {new Date(movie.release_date).getFullYear()}
+              {new Date(movie.release_date || movie.first_air_date || "").getFullYear()}
             </span>
+
             <span className="flex items-center gap-1 text-sm text-zinc-300">
-              <Clock /> {movie.runtime} min
+              <Clock /> {movie.runtime || movie.episode_run_time?.[0] || "?"} min
             </span>
+
             <span className="flex items-center gap-1 text-sm text-zinc-300">
-              <Star /> {movie.vote_average}
+              <Star /> {movie.vote_average.toFixed(1)}
             </span>
           </div>
 
@@ -129,7 +137,7 @@ function DetailsPage() {
           <div className="space-y-2 text-sm text-zinc-300">
             <p>
               <strong className="text-white">Country:</strong>{" "}
-              {movie.production_countries.map((c) => c.name).join(", ")}
+              {movie.production_countries?.map((c) => c.name).join(", ") || "—"}
             </p>
             <p>
               <strong className="text-white">Genre:</strong>{" "}
@@ -137,15 +145,18 @@ function DetailsPage() {
             </p>
             <p>
               <strong className="text-white">Date Release:</strong>{" "}
-              {new Date(movie.release_date).toLocaleDateString("en-US", {
-                month: "short",
-                day: "2-digit",
-                year: "numeric",
-              })}
+              {new Date(movie.release_date || movie.first_air_date || "").toLocaleDateString(
+                "en-US",
+                {
+                  month: "short",
+                  day: "2-digit",
+                  year: "numeric",
+                }
+              )}
             </p>
             <p>
               <strong className="text-white">Production:</strong>{" "}
-              {movie.production_companies.map((p) => p.name).join(", ")}
+              {movie.production_companies.map((p) => p.name).join(", ") || "—"}
             </p>
             <p>
               <strong className="text-white">Cast:</strong>{" "}
@@ -157,25 +168,21 @@ function DetailsPage() {
 
       {providers.length > 0 && (
         <div className="mt-12">
-            <h2 className="text-xl font-semibold mb-6">Onde assistir</h2>
-            <div className="space-y-4">
+          <h2 className="text-xl font-semibold mb-6">Onde assistir</h2>
+          <div className="space-y-4">
             {providers.map((provider) => (
-                <div
-                key={provider.provider_name}
-                className="flex items-center gap-4"
-                >
+              <div key={provider.provider_name} className="flex items-center gap-4">
                 <img
-                    src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
-                    alt={provider.provider_name}
-                    className="w-10 h-10 object-contain"
+                  src={`https://image.tmdb.org/t/p/original${provider.logo_path}`}
+                  alt={provider.provider_name}
+                  className="w-10 h-10 object-contain"
                 />
                 <span className="text-lg font-medium">{provider.provider_name}</span>
-                </div>
+              </div>
             ))}
-            </div>
+          </div>
         </div>
-     )}
-
+      )}
     </div>
   );
 }
