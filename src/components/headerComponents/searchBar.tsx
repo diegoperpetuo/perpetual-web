@@ -3,13 +3,16 @@ import { useNavigate } from "react-router-dom";
 
 interface SearchBarProps {
   query: string;
+  setQuery: (value: string) => void;
   titles: { id: string; title: string; media_type: string }[];
   handleChange: (value: string) => void;
 }
 
 
-export default function SearchBar({ query, titles, handleChange }: SearchBarProps) {
+export default function SearchBar({ query,setQuery, titles, handleChange }: SearchBarProps) {
+  
   const navigate = useNavigate();
+  
 
   return (
     <div className="relative flex flex-col items-center w-full max-w-md">
@@ -29,7 +32,11 @@ export default function SearchBar({ query, titles, handleChange }: SearchBarProp
           <ul>
             {titles.map((movie) => (
               <li
-              onClick={() => navigate(`/detalhes/${movie.media_type}/${movie.id}`)}
+              onClick={() => {
+                navigate(`/detalhes/${movie.media_type}/${movie.id}`);
+                setQuery(""); 
+              }}
+              
                 key={movie.id}
                 className="p-2 hover:bg-gray-200 cursor-pointer text-black"
               >
