@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Header from "./components/header";
 import HeroBanner from "./components/heroBanner";
 import DetailsPage from './components/detailsPage';
+import MovieList from "./components/movieList";
 
 function App() {
   return (
