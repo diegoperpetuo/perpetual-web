@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaStar } from "react-icons/fa";
-import { FiClock } from "react-icons/fi";
-import { BsFillCalendarDateFill } from "react-icons/bs";
+import { Star, Calendar, Clock} from "lucide-react";
 
 interface Provider {
   provider_name: string;
@@ -104,14 +102,14 @@ function Details() {
               </span>
             ))}
             <span className="flex items-center gap-1 text-sm text-zinc-300 ml-4">
-              <BsFillCalendarDateFill />{" "}
+              <Calendar />{" "}
               {new Date(movie.release_date).getFullYear()}
             </span>
             <span className="flex items-center gap-1 text-sm text-zinc-300">
-              <FiClock /> {movie.runtime} min
+              <Clock /> {movie.runtime} min
             </span>
             <span className="flex items-center gap-1 text-sm text-zinc-300">
-              <FaStar /> {movie.vote_average}
+              <Star /> {movie.vote_average}
             </span>
           </div>
 
