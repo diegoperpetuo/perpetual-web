@@ -10,7 +10,7 @@ function App() {
 
   const location = useLocation();
   
-  const hideHeader = ['login', 'register'];
+  const hideHeader = ['/login', '/register'];
   const shouldShowHeader = !hideHeader.includes(location.pathname);
 
   return (
