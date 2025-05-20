@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AuthHeader from '../components/AuthHeader';
 
 function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -17,33 +18,24 @@ function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    // Simulação de cadastro
     if (!username || !email || !password) {
       setError('Preencha todos os campos.');
       return;
     }
 
-    // Aqui você pode simular um cadastro bem-sucedido
-    // Por exemplo, salvar um "token" fake e redirecionar
     localStorage.setItem('token', 'fake-jwt-token');
     navigate('/');
   };
 
   return (
-    <div className="bg-[#1E1A1A] w-screen h-screen flex flex-col items-center justify-center gap-y-12">
-      <div className='w-full flex flex-row items-center justify-center gap-4'>
-        <a
-          className="absolute top-4 left-4 text-white text-sm hover:underline cursor-pointer"
-          onClick={() => navigate(-1)}
-        >
-          Voltar para o login
-        </a>
-        <div className="w-80 flex items-center justify-center">
-          <img src="/logo.png" alt="logo" />
-        </div>
+    <div className="bg-[#1E1A1A] w-screen h-screen relative">
+      <AuthHeader variant='register' />
+      {/* Logo sempre fixa no topo */}
+      <div className="w-80 flex items-center justify-center mx-auto pt-24">
+        <img src="/logo.png" alt="logo" />
       </div>
-
-      <div className="flex flex-col">
+      {/* Formulário centralizado, mas não influencia a logo */}
+      <div className="flex flex-col items-center justify-center" style={{ minHeight: "calc(100vh - 220px)" }}>
         <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center gap-10">
           <div className="flex flex-col items-center justify-center gap-4">
             <input

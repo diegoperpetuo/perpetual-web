@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Removido: import { loginUser } from '../services/authService';
+import AuthHeader from '../components/AuthHeader';
 
 function LoginPage() {
   const [emailPlaceholder, setEmailPlaceholder] = useState("E-mail");
@@ -36,11 +36,14 @@ function LoginPage() {
   };
 
   return (
-    <div className="bg-[#1E1A1A] w-screen h-screen flex flex-col items-center justify-center gap-y-12">
-      <div className="w-80 flex items-center justify-center">
+    <div className="bg-[#1E1A1A] w-screen h-screen relative">
+      <AuthHeader variant='login' />
+      {/* Logo sempre fixa no topo */}
+      <div className="w-80 flex items-center justify-center mx-auto pt-24">
         <img src="/logo.png" alt="logo" />
       </div>
-      <div className="flex flex-col">
+      {/* Formulário centralizado, mas não influencia a logo */}
+      <div className="flex flex-col items-center justify-center" style={{ minHeight: "calc(100vh - 220px)" }}>
         <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center gap-10">
           <div className="flex flex-col items-center justify-center gap-4">
             <input
