@@ -11,6 +11,7 @@ const Header: React.FC = () => {
   const [query, setQuery] = useState("");
   const [titles, setTitles] = useState<{ id: string; title: string; media_type: string }[]>([]);
 
+  const navigate = useNavigate();
 
   const Menu = [
     { name: "Início", link: "/" },
@@ -85,6 +86,7 @@ const Header: React.FC = () => {
           </div>
           <div>
             <a 
+              onClick={() => navigate("/login")}
               className="flex justify-center items-center w-10 h-10 rounded-full hover:bg-[#2b2b2b] transition-all duration-300"
               >
               <CircleUser className="text-white w-8 h-8" />
