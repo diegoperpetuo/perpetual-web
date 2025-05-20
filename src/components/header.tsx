@@ -3,7 +3,9 @@
 import DesktopHeaderMenu from "./headerComponents/desktopHeader";
 import MobileHeaderMenu from "./headerComponents/mobileHeader";
 import SearchBar from "./headerComponents/searchBar";
+import { CircleUser } from 'lucide-react';
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Header: React.FC = () => {
   const [query, setQuery] = useState("");
@@ -63,7 +65,7 @@ const Header: React.FC = () => {
   return (
     <div>
       <header className="h-24 text-[15px] inset-0 flex items-center">
-        <nav className="px-3.5 flex items-center justify-between w-full max-w-7xl mx-auto">
+        <nav className="px-3.5 flex items-center justify-between w-full max-w-7xl mx-auto gap-2">
           <div className="hidden md:flex gap-x-2 w-full">
             <ul className="md:flex items-center justify-center gap-x-2">
               {Menu.map((menu) => (
@@ -80,6 +82,13 @@ const Header: React.FC = () => {
             </div>
             
             <SearchBar query={query} titles={titles} handleChange={handleChange} />
+          </div>
+          <div>
+            <a 
+              className="flex justify-center items-center w-10 h-10 rounded-full hover:bg-[#2b2b2b] transition-all duration-300"
+              >
+              <CircleUser className="text-white w-8 h-8" />
+            </a>
           </div>
         </nav>
       </header>
