@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
-import { Star, Calendar, Clock } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { Star, Calendar, Clock, Heart, XCircle } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 interface Provider {
   provider_name: string;
@@ -8,6 +11,7 @@ interface Provider {
 }
 
 interface ProductionData {
+  id: number;
   title?: string;
   name?: string;
   overview: string;
@@ -33,22 +37,37 @@ interface ProductionData {
   };
 }
 
+interface UserMovie {
+  tmdbId: number;
+  rating?: number | null;
+  favorite?: boolean;
+  _id?: string;
+}
+
 function DetailsPage() {
-  const { id, media_type } = useParams<{ id: string; media_type: string }>();
+  const { id: tmdbIdParam, media_type } = useParams<{ id: string; media_type: string }>();
   const [movie, setMovie] = useState<ProductionData | null>(null);
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [providers, setProviders] = useState<Provider[]>([]); //
+  const [isLoading, setIsLoading] = useState(true); //
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [userMovieList, setUserMovieList] = useState<UserMovie[]>([]);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const { isAuthenticated, token } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!tmdbIdParam || !media_type) return;
+      setIsLoading(true);
       try {
-        setIsLoading(true);
         const [movieRes, providersRes] = await Promise.all([
           fetch(
-            `https://api.themoviedb.org/3/${media_type}/${id}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
+            `https://api.themoviedb.org/3/${media_type}/${tmdbIdParam}?api_key=12923231fddd461a9280cdc286a6bee5&language=pt-BR&append_to_response=credits,videos`
           ),
           fetch(
-            `https://api.themoviedb.org/3/${media_type}/${id}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
+            `https://api.themoviedb.org/3/${media_type}/${tmdbIdParam}/watch/providers?api_key=12923231fddd461a9280cdc286a6bee5`
           ),
         ]);
 
@@ -56,22 +75,115 @@ function DetailsPage() {
         const providersData = await providersRes.json();
 
         setMovie(movieData);
-        setProviders(providersData.results?.BR?.flatrate || []);
+        setProviders(providersData.results?.BR?.flatrate || []); //
       } catch (err) {
-        console.error(err);
+        console.error("Erro ao buscar dados da produção:", err);
+        setErrorMessage("Não foi possível carregar os detalhes da produção.");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [id, media_type]);
+  }, [tmdbIdParam, media_type]);
+
+  useEffect(() => {
+    if (isAuthenticated && token && tmdbIdParam) {
+      setFavoriteLoading(true);
+      const fetchUserMovies = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/user/movies`, { //
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            const movies: UserMovie[] = await response.json();
+            setUserMovieList(movies);
+            const currentMovieAsFavorite = movies.find(
+              (m) => m.tmdbId === parseInt(tmdbIdParam) && m.favorite
+            );
+            setIsFavorite(!!currentMovieAsFavorite);
+          } else {
+            console.error("Erro ao buscar lista de filmes do usuário:", await response.text());
+          }
+        } catch (error) {
+          console.error("Falha ao buscar lista de filmes do usuário:", error);
+        } finally {
+          setFavoriteLoading(false);
+        }
+      };
+      fetchUserMovies();
+    } else {
+      setUserMovieList([]);
+      setIsFavorite(false);
+    }
+  }, [isAuthenticated, token, tmdbIdParam]);
+
+  const handleToggleFavorite = async () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    if (!tmdbIdParam || !movie || !media_type) return;
+
+    setFavoriteLoading(true);
+    setErrorMessage('');
+    const currentTmdbId = parseInt(tmdbIdParam);
+    const newFavoriteStatus = !isFavorite;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/movies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tmdbId: currentTmdbId,
+          favorite: newFavoriteStatus,
+          media_type: media_type,
+        }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(responseData.error || 'Erro ao atualizar favorito.');
+        setFavoriteLoading(false);
+        return;
+      }
+      
+      setIsFavorite(newFavoriteStatus);
+      // A resposta do backend é o filme específico que foi adicionado/atualizado
+      // ou a lista inteira (conforme definido em `addOrUpdateMovie` no backend)
+      // Assumindo que responseData seja o filme atualizado:
+      const updatedMovieEntry = responseData as UserMovie; 
+
+      setUserMovieList(prevList => {
+        const existingIndex = prevList.findIndex(m => m.tmdbId === updatedMovieEntry.tmdbId);
+        if (existingIndex > -1) {
+          const newList = [...prevList];
+          newList[existingIndex] = { ...newList[existingIndex], ...updatedMovieEntry };
+          return newList;
+        } else {
+          return [...prevList, updatedMovieEntry];
+        }
+      });
+
+    } catch (error) {
+      console.error("Erro ao favoritar/desfavoritar:", error);
+      setErrorMessage('Falha na comunicação com o servidor ao tentar favoritar.');
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
         <div className="animate-pulse text-xl">
-          Carregando detalhes do {media_type === "tv" ? "programa" : "filme"}...
+          Carregando detalhes {media_type === "tv" ? "da série" : "do filme"}...
         </div>
       </div>
     );
@@ -80,14 +192,14 @@ function DetailsPage() {
   if (!movie) {
     return (
       <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
-        <div className="text-xl">Não foi possível carregar os detalhes.</div>
+        <div className="text-xl">{errorMessage || "Não foi possível carregar os detalhes."}</div>
       </div>
     );
   }
 
   const trailerKey = movie.videos?.results.find(
     (video) => video.type === "Trailer" && video.site === "YouTube"
-  )?.key;
+  )?.key; //
 
   const releaseDate = movie.release_date || movie.first_air_date;
   const runtime = movie.runtime || movie.episode_run_time?.[0];
@@ -95,6 +207,7 @@ function DetailsPage() {
 
   return (
     <div className="bg-neutral-900 text-white min-h-screen px-4 sm:px-6 py-8 sm:py-10">
+      {/* Seção do Trailer */}
       {trailerKey && (
         <div className="w-full mb-8 sm:mb-10 aspect-video max-w-4xl mx-auto">
           <iframe
@@ -107,25 +220,47 @@ function DetailsPage() {
         </div>
       )}
 
+      {/* Seção Principal de Detalhes */}
       <div className="flex flex-col md:flex-row gap-6 sm:gap-10">
+        {/* Poster */}
         <div className="flex justify-center md:block">
           <img
-            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} //
             alt={title}
             className="rounded-lg w-full max-w-[300px] md:w-[300px] shadow-lg"
           />
         </div>
 
+        {/* Informações */}
         <div className="flex-1 space-y-4 sm:space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <h1 className="text-2xl sm:text-3xl font-bold">
               {title.toUpperCase()}
             </h1>
-            <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium w-full sm:w-auto">
-              + Adicionar aos favoritos
-            </button>
+            {isAuthenticated && (
+              <button
+                onClick={handleToggleFavorite}
+                disabled={favoriteLoading}
+                className={`px-4 py-2 rounded-lg font-medium w-full sm:w-auto flex items-center justify-center gap-2 transition-colors duration-150
+                            ${isFavorite ? 'bg-pink-600 hover:bg-pink-700 text-white' : 'bg-gray-600 hover:bg-red-700 text-white'}
+                            disabled:opacity-60 disabled:cursor-not-allowed`}
+              >
+                {isFavorite ? <XCircle size={20} /> : <Heart size={20} />}
+                {favoriteLoading ? 'Aguarde...' : (isFavorite ? 'Remover dos Favoritos' : '+ Adicionar aos Favoritos')}
+              </button>
+            )}
+             {!isAuthenticated && (
+                 <button
+                 onClick={() => navigate('/login')}
+                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium w-full sm:w-auto flex items-center justify-center gap-2"
+               >
+                 <Heart size={20} /> Fazer Login para Favoritar
+               </button>
+            )}
           </div>
+          {errorMessage && <p className="text-red-500 text-sm mt-2">{errorMessage}</p>}
 
+          {/* Metadados: Gêneros, Ano, Duração, Rating */}
           <div className="flex flex-wrap gap-2 items-center">
             {movie.genres.map((genre, index) => (
               <span
@@ -135,32 +270,31 @@ function DetailsPage() {
                 {genre.name}
               </span>
             ))}
-
             {releaseDate && (
               <span className="flex items-center gap-1 text-sm text-zinc-300 ml-2 sm:ml-4">
-                <Calendar /> {new Date(releaseDate).getFullYear()}
+                <Calendar size={16} /> {new Date(releaseDate).getFullYear()}
               </span>
             )}
-
             {runtime && (
               <span className="flex items-center gap-1 text-sm text-zinc-300">
-                <Clock /> {runtime} min
+                <Clock size={16} /> {runtime} min
               </span>
             )}
-
             <span className="flex items-center gap-1 text-sm text-zinc-300">
-              <Star /> {movie.vote_average.toFixed(1)}
+              <Star size={16} /> {movie.vote_average.toFixed(1)}
             </span>
           </div>
 
+          {/* Sinopse */}
           <p className="text-zinc-300 leading-relaxed text-sm sm:text-base">
             {movie.overview || "Sinopse não disponível."}
           </p>
 
+          {/* Detalhes Adicionais: País, Gêneros (repetido para layout?), Lançamento, Produção, Elenco */}
           <div className="space-y-2 text-sm text-zinc-300">
             <p>
               <strong className="text-white">País:</strong>{" "}
-              {movie.production_countries
+              {movie.production_countries && movie.production_countries.length > 0
                 ? movie.production_countries.map((c) => c.name).join(", ")
                 : "Não disponível"}
             </p>
@@ -168,7 +302,6 @@ function DetailsPage() {
               <strong className="text-white">Gêneros:</strong>{" "}
               {movie.genres.map((g) => g.name).join(", ")}
             </p>
-
             {releaseDate && (
               <p>
                 <strong className="text-white">Data de lançamento:</strong>{" "}
@@ -179,8 +312,7 @@ function DetailsPage() {
                 })}
               </p>
             )}
-
-            {movie.production_companies.length > 0 && (
+            {movie.production_companies && movie.production_companies.length > 0 && (
               <p>
                 <strong className="text-white">Produção:</strong>{" "}
                 {movie.production_companies
@@ -189,8 +321,7 @@ function DetailsPage() {
                   .join(", ")}
               </p>
             )}
-
-            {movie.credits.cast.length > 0 && (
+            {movie.credits && movie.credits.cast && movie.credits.cast.length > 0 && (
               <p>
                 <strong className="text-white">Elenco principal:</strong>{" "}
                 {movie.credits.cast
@@ -203,7 +334,8 @@ function DetailsPage() {
         </div>
       </div>
 
-      {providers.length > 0 && (
+      {/* Seção Onde Assistir */}
+      {providers && providers.length > 0 && (
         <div className="mt-8 sm:mt-12">
           <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
             Onde assistir

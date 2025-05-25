@@ -3,14 +3,15 @@
 import DesktopHeaderMenu from "./headerComponents/desktopHeader";
 import MobileHeaderMenu from "./headerComponents/mobileHeader";
 import SearchBar from "./headerComponents/searchBar";
-import { CircleUser } from 'lucide-react';
+import { CircleUser, LogOut } from 'lucide-react';
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const Header: React.FC = () => {
   const [query, setQuery] = useState("");
   const [titles, setTitles] = useState<{ id: string; title: string; media_type: string }[]>([]);
-
+  const { isAuthenticated, logout, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const Menu = [
@@ -23,6 +24,11 @@ const Header: React.FC = () => {
   ];
 
   const fetchData = (value: string) => {
+    if (value.trim() === "") {
+      setTitles([]);
+      return;
+    }
+
     fetch(
       `https://api.themoviedb.org/3/search/multi?include_adult=false&page=1&language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5&query=${value}`
     )
@@ -42,58 +48,99 @@ const Header: React.FC = () => {
               title: item.title || item.name,
               media_type: item.media_type,
             }));
-  
           setTitles(filteredTitles);
+        } else {
+          setTitles([]);
         }
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
+        setTitles([]);
       });
   };
-  
 
   const handleChange = (value: string) => {
     setQuery(value);
-    
-    if (value.trim() === ""){
-      setTitles([]);
-      return;
-    }
-
     fetchData(value);
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  if (authLoading) {
+    return (
+        <header className="h-24 text-[15px] inset-0 flex items-center">
+            <nav className="px-3.5 flex items-center justify-between w-full max-w-7xl mx-auto gap-2">
+            </nav>
+        </header>
+    );
+  }
+
   return (
     <div>
-      <header className="h-24 text-[15px] inset-0 flex items-center">
-        <nav className="px-3.5 flex items-center justify-between w-full max-w-7xl mx-auto gap-2">
-          <div className="hidden md:flex gap-x-2 w-full">
+      <header className="h-24 text-[15px] inset-0 flex items-center bg-[#1E1A1A] bg-opacity-80 backdrop-blur-md fixed top-0 left-0 right-0 z-50">
+        <nav className="px-3.5 flex items-center justify-between w-full max-w-screen-xl mx-auto gap-4"> {/* Aumentado max-w e gap */}
+          {/* Logo/Home Link - Adicionado */}
+          <Link to="/" className="flex items-center gap-2 text-white hover:text-red-500 transition-colors" title="Página Inicial">
+            <img src="/fav_logo.png" alt="Logo Perpetual" className="h-10 w-10"/> {/* Usando fav_logo como no index.html */}
+            <span className="font-bold text-xl hidden sm:block">Perpetual</span>
+          </Link>
+
+          {/* Menu para Desktop e SearchBar */}
+          <div className="hidden md:flex items-center justify-center flex-grow gap-x-4"> {/* flex-grow para searchbar ocupar mais espaço */}
             <ul className="md:flex items-center justify-center gap-x-2">
               {Menu.map((menu) => (
                 <DesktopHeaderMenu menu={menu} key={menu.name} />
               ))}
             </ul>
-            
-            <SearchBar query={query} titles={titles} handleChange={handleChange} />
+            <div className="w-full max-w-lg"> {/* Limitando a largura da searchbar */}
+                <SearchBar query={query} titles={titles} handleChange={handleChange} />
+            </div>
           </div>
 
-          <div className="md:hidden gap-x-2 flex justify-between items-center w-full">
-            <div>
-              <MobileHeaderMenu Menus={Menu} />
+          {/* Menu para Mobile e SearchBar */}
+          <div className="md:hidden flex items-center justify-end flex-grow gap-x-3"> {/* justify-end e flex-grow */}
+            <div className="w-full max-w-xs"> {/* Limitando a largura da searchbar no mobile */}
+                <SearchBar query={query} titles={titles} handleChange={handleChange} />
             </div>
-            
-            <SearchBar query={query} titles={titles} handleChange={handleChange} />
+            <MobileHeaderMenu Menus={Menu} />
           </div>
-          <div>
-            <a 
-              onClick={() => navigate("/login")}
-              className="flex justify-center items-center w-10 h-10 rounded-full hover:bg-[#2b2b2b] transition-all duration-300"
+
+          {/* Ícone de Usuário/Login/Logout */}
+          <div className="flex items-center">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="flex justify-center items-center w-10 h-10 rounded-full hover:bg-[#2b2b2b] transition-all duration-300"
+                  title="Meu Perfil"
+                >
+                  <CircleUser className="text-white w-8 h-8" />
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex justify-center items-center w-10 h-10 rounded-full hover:bg-[#2b2b2b] transition-all duration-300"
+                  title="Sair"
+                >
+                  <LogOut className="text-white w-7 h-7" />
+                </button>
+              </div>
+            ) : (
+              <a
+                onClick={() => navigate("/login")}
+                className="flex justify-center items-center w-10 h-10 rounded-full hover:bg-[#2b2b2b] transition-all duration-300 cursor-pointer"
+                title="Login"
               >
-              <CircleUser className="text-white w-8 h-8" />
-            </a>
+                <CircleUser className="text-white w-8 h-8" />
+              </a>
+            )}
           </div>
         </nav>
       </header>
+      {/* Adiciona um espaçador para compensar a altura do header fixo */}
+      <div className="h-24" />
     </div>
   );
 };

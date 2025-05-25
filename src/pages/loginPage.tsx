@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AuthHeader from '../components/AuthHeader';
+import AuthHeader from '../components/authHeader'; //
+import { useAuth } from '../contexts/AuthContext';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 function LoginPage() {
   const [emailPlaceholder, setEmailPlaceholder] = useState("E-mail");
@@ -9,40 +12,60 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     if (!email || !password) {
       setError('Preencha todos os campos.');
+      setLoading(false);
       return;
     }
 
-    // Simulação de autenticação
-    if (email === "teste@email.com" && password === "123456") {
-      localStorage.setItem('token', 'fake-jwt-token');
-      console.log('Login successful');
-      navigate('/dashboard');
-    } else if (email !== "teste@email.com") {
-      setError('E-mail não cadastrado.');
-    } else if (password !== "123456") {
-      setError('Senha incorreta.');
-    } else {
-      setError('Erro ao fazer login.');
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Erro ao fazer login.');
+        setLoading(false);
+        return;
+      }
+
+      if (data.token) {
+        login(data.token);
+        console.log('Login successful, token:', data.token);
+        navigate('/');
+      } else {
+        setError('Token não recebido do servidor.');
+      }
+    } catch (err) {
+      console.error('Falha na requisição de login:', err);
+      setError('Não foi possível conectar ao servidor. Tente novamente mais tarde.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="bg-[#1E1A1A] w-screen h-screen relative">
       <AuthHeader variant='login' />
-      {/* Logo sempre fixa no topo */}
       <div className="w-80 flex items-center justify-center mx-auto pt-24">
         <img src="/logo.png" alt="logo" />
       </div>
-      {/* Formulário centralizado, mas não influencia a logo */}
       <div className="flex flex-col items-center justify-center" style={{ minHeight: "calc(100vh - 220px)" }}>
         <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center gap-10">
           <div className="flex flex-col items-center justify-center gap-4">
@@ -55,6 +78,7 @@ function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={loading}
             />
             <input
               type="password"
@@ -65,14 +89,16 @@ function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
           <div>
             <button
               type="submit"
-              className="bg-[#E80000] w-80 h-12 rounded-md text-center text-white mt-4 hover:scale-105 transition-transform duration-200"
+              className="bg-[#E80000] w-80 h-12 rounded-md text-center text-white mt-4 hover:scale-105 transition-transform duration-200 disabled:opacity-50"
+              disabled={loading}
             >
-              Entrar
+              {loading ? 'Entrando...' : 'Entrar'}
             </button>
             <a href="#" className="text-white text-sm hover:underline mt-2 block text-center">
               Recuperar senha
