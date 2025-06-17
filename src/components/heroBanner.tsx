@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useSwipeable } from "react-swipeable";
 import { motion, AnimatePresence } from "framer-motion";
 
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY
+
 function HeroBanner() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [genres, setGenres] = useState<{ [key: number]: string }>({});
@@ -23,9 +25,13 @@ function HeroBanner() {
   };
 
   const fetchGenres = async () => {
+    if (!TMDB_API_KEY) {
+        console.error("Chave da API TMDB não configurada para HeroBanner (genres).");
+        return;
+    }
     try {
       const res = await fetch(
-        `https://api.themoviedb.org/3/genre/movie/list?language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5`
+        `https://api.themoviedb.org/3/genre/movie/list?language=pt-BR&api_key=${TMDB_API_KEY}`
       );
       const data = await res.json();
       const genreMap: { [key: number]: string } = {};
@@ -39,9 +45,13 @@ function HeroBanner() {
   };
 
   const fetchMovies = async () => {
+    if (!TMDB_API_KEY) {
+        console.error("Chave da API TMDB não configurada para HeroBanner (movies).");
+        return;
+    }
     try {
       const res = await fetch(
-        `https://api.themoviedb.org/3/trending/movie/day?language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5`
+        `https://api.themoviedb.org/3/trending/movie/day?language=pt-BR&api_key=${TMDB_API_KEY}`
       );
       const data = await res.json();
 
@@ -52,10 +62,10 @@ function HeroBanner() {
 
       const detailed = await Promise.all(
         filtered.map(async (movie: any) => {
-          const res = await fetch(
-            `https://api.themoviedb.org/3/movie/${movie.id}?language=pt-BR&api_key=12923231fddd461a9280cdc286a6bee5`
+          const resDetails = await fetch(
+            `https://api.themoviedb.org/3/movie/${movie.id}?language=pt-BR&api_key=${TMDB_API_KEY}`
           );
-          const details = await res.json();
+          const details = await resDetails.json();
           return { ...movie, runtime: details.runtime };
         })
       );
@@ -88,9 +98,7 @@ function HeroBanner() {
   };
 
   return (
-    <div className="relative touch-none " {...swipeHandlers}
-            
-      >
+    <div className="relative touch-none " {...swipeHandlers}>
       <AnimatePresence mode="wait">
         {movies.length > 0 && (
           <motion.div
@@ -151,7 +159,6 @@ function HeroBanner() {
                   className="bg-black/60 p-4 rounded-xl shadow-lg max-w-[650px] text-base leading-relaxed max-h-[100px] overflow-auto"
                   style={{
                     scrollbarWidth: "none",
-                    scrollbarColor: "none",
                   }}
                 >
                   {movies[currentIndex].overview}
@@ -177,16 +184,15 @@ function HeroBanner() {
       </button>
 
       <div className="absolute bottom-1 w-full flex justify-center">
-  {movies.map((_, i) => (
-    <div
-      key={i}
-      className={`transition-all w-3 h-3 rounded-full mx-1 ${
-        currentIndex === i ? "bg-white p-2" : "bg-red-500"
-      }`}
-    />
-  ))}
-</div>
-
+        {movies.map((_, i) => (
+          <div
+            key={i}
+            className={`transition-all w-3 h-3 rounded-full mx-1 ${
+              currentIndex === i ? "bg-white p-2" : "bg-red-500"
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
