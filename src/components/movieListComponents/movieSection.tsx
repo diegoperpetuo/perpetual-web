@@ -3,7 +3,8 @@ import { MovieDb, MovieResult, TvResult } from "moviedb-promise";
 import MovieCard from "./movieCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const moviedb = new MovieDb("73628ed5a3ca37355ba6d16fdb8b4a23");
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const moviedb = new MovieDb(TMDB_API_KEY);
 
 type SectionType = "popular" | "now_playing" | "tv";
 
@@ -13,6 +14,10 @@ const MovieSection = ({ title, type }: { title: string; type: SectionType }) => 
   const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!TMDB_API_KEY) {
+        console.error("Chave da API TMDB não configurada para MovieSection (genres).");
+        return;
+    }
     const fetchGenres = async () => {
       let movieGenres = await moviedb.genreMovieList({ language: "pt-BR" });
       let tvGenres = await moviedb.genreTvList({ language: "pt-BR" });
@@ -29,6 +34,11 @@ const MovieSection = ({ title, type }: { title: string; type: SectionType }) => 
   }, []);
 
   useEffect(() => {
+    if (!TMDB_API_KEY) {
+        console.error("Chave da API TMDB não configurada para MovieSection (data).");
+        setItems([]);
+        return;
+    }
     const fetchData = async () => {
       let res;
       if (type === "popular") {
