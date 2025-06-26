@@ -1,51 +1,47 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MovieDb, MovieResponse, ShowResponse } from "moviedb-promise";
 import { useAuth } from "../contexts/AuthContext";
 import { Star, Heart, Loader2, PlayCircle, ChevronLeft } from "lucide-react";
+import Comments from "./comments";
+import tmdbService, { MovieResponse, ShowResponse } from "../services/tmdbService";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY; 
-const moviedb = new MovieDb(TMDB_API_KEY);
-
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 interface UserMovie {
   tmdbId: number;
   rating?: number | null;
   favorite?: boolean;
-  media_type: 'movie' | 'tv';
+  media_type: "movie" | "tv";
   _id?: string;
-  error?: string; 
+  error?: string;
 }
 
-interface CastMember {
+type CastMember = {
   id: number;
   name: string;
-  character?: string;
-  profile_path?: string | null;
-}
+  character: string;
+  profile_path?: string;
+};
 
-interface CrewMember {
+type CrewMember = {
   id: number;
   name: string;
-  job?: string;
-  profile_path?: string | null;
-}
+  job: string;
+  profile_path?: string;
+};
 
-interface VideoResult {
-  id: string;
-  iso_639_1: string;
-  iso_3166_1: string;
+type VideoResult = {
   key: string;
-  name: string;
-  official: boolean;
-  published_at: string;
   site: string;
-  size: number;
   type: string;
-}
+  official: boolean;
+};
 
-type TmdbDetail = (Omit<MovieResponse, 'media_type'> | Omit<ShowResponse, 'media_type'> & { seasons?: any[] }) & {
+type TmdbDetail = (
+  | Omit<MovieResponse, "media_type">
+  | (Omit<ShowResponse, "media_type"> & { seasons?: any[] })
+) & {
   credits?: {
     cast?: CastMember[];
     crew?: CrewMember[];
@@ -53,11 +49,14 @@ type TmdbDetail = (Omit<MovieResponse, 'media_type'> | Omit<ShowResponse, 'media
   videos?: {
     results?: VideoResult[];
   };
-  media_type: 'movie' | 'tv';
+  media_type: "movie" | "tv";
 };
 
 function DetailsPage() {
-  const { media_type, id: tmdbIdFromParams } = useParams<{ media_type: 'movie' | 'tv'; id: string }>();
+  const { media_type, id: tmdbIdFromParams } = useParams<{
+    media_type: "movie" | "tv";
+    id: string;
+  }>();
   const mediaType = media_type;
   const tmdbIdParam = tmdbIdFromParams;
 
@@ -76,46 +75,39 @@ function DetailsPage() {
   const [ratingLoading, setRatingLoading] = useState(false);
   const [ratingFeedback, setRatingFeedback] = useState<string | null>(null);
 
-
   useEffect(() => {
     if (!tmdbIdParam || !mediaType) {
       setError("ID do filme/série ou tipo de mídia não fornecido.");
       setIsLoading(false);
       return;
     }
-    if (mediaType !== 'movie' && mediaType !== 'tv') {
-        setError("Tipo de mídia inválido.");
-        setIsLoading(false);
-        return;
-    }
-    if (!TMDB_API_KEY) {
-        setError("Chave da API TMDB não configurada.");
-        setIsLoading(false);
-        return;
+    if (mediaType !== "movie" && mediaType !== "tv") {
+      setError("Tipo de mídia inválido.");
+      setIsLoading(false);
+      return;
     }
 
     const fetchDetails = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        let responseData: MovieResponse | ShowResponse | null = null;
-        const appendToResponse = ['credits', 'videos'];
-        
-        if (mediaType === "movie") {
-          responseData = await moviedb.movieInfo({ id: tmdbIdParam, language: "pt-BR", append_to_response: appendToResponse.join(',') });
-        } else if (mediaType === "tv") {
-          responseData = await moviedb.tvInfo({ id: tmdbIdParam, language: "pt-BR", append_to_response: appendToResponse.join(',') });
-        }
-        
-        if (responseData) {
-            setDetails({ ...responseData, media_type: mediaType } as TmdbDetail);
-        } else {
-            throw new Error("Resposta da API TMDB vazia ou inválida.");
-        }
+        const appendToResponse = ["credits", "videos"];
+        const responseData = await tmdbService.getItemDetails(
+          mediaType,
+          parseInt(tmdbIdParam),
+          appendToResponse
+        );
 
+        if (responseData) {
+          setDetails({ ...responseData, media_type: mediaType } as TmdbDetail);
+        } else {
+          throw new Error("Resposta da API TMDB vazia ou inválida.");
+        }
       } catch (err) {
         console.error("Erro ao buscar detalhes:", err);
-        setError("Não foi possível carregar os detalhes. Tente novamente mais tarde.");
+        setError(
+          "Não foi possível carregar os detalhes. Tente novamente mais tarde."
+        );
       } finally {
         setIsLoading(false);
       }
@@ -133,26 +125,34 @@ function DetailsPage() {
         try {
           const response = await fetch(`${API_BASE_URL}/api/user/movies`, {
             headers: {
-              'Authorization': `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
             },
           });
           if (response.ok) {
             const movies: UserMovie[] = await response.json();
             setUserMovieList(movies);
             const currentMovieStatus = movies.find(
-              (m) => m.tmdbId === parseInt(tmdbIdParam) && m.media_type === mediaType
+              (m) =>
+                m.tmdbId === parseInt(tmdbIdParam) && m.media_type === mediaType
             );
             if (currentMovieStatus) {
-                setIsFavorite(!!currentMovieStatus.favorite);
-                setCurrentRating(currentMovieStatus.rating !== undefined ? currentMovieStatus.rating : null);
+              setIsFavorite(!!currentMovieStatus.favorite);
+              setCurrentRating(
+                currentMovieStatus.rating !== undefined
+                  ? currentMovieStatus.rating
+                  : null
+              );
             } else {
-                setIsFavorite(false);
-                setCurrentRating(null);
+              setIsFavorite(false);
+              setCurrentRating(null);
             }
           } else {
-            console.error("Erro ao buscar lista de filmes do usuário:", await response.text());
-             setIsFavorite(false);
-             setCurrentRating(null);
+            console.error(
+              "Erro ao buscar lista de filmes do usuário:",
+              await response.text()
+            );
+            setIsFavorite(false);
+            setCurrentRating(null);
           }
         } catch (err) {
           console.error("Falha ao buscar lista de filmes do usuário:", err);
@@ -175,41 +175,49 @@ function DetailsPage() {
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated || !token || !details || !details.id || !mediaType) {
-        if(!isAuthenticated) navigate('/login');
-        return;
+      if (!isAuthenticated) navigate("/login");
+      return;
     }
     setFavoriteLoading(true);
-    setError(null); 
+    setError(null);
     try {
       const newFavoriteStatus = !isFavorite;
       const backendResponse = await fetch(`${API_BASE_URL}/api/user/movies`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           tmdbId: details.id,
           favorite: newFavoriteStatus,
-          media_type: mediaType 
+          media_type: mediaType,
         }),
       });
-      
-      const responseData: UserMovie | { error: string } = await backendResponse.json();
+
+      const responseData: UserMovie | { error: string } =
+        await backendResponse.json();
 
       if (backendResponse.ok) {
         const updatedMovieEntry = responseData as UserMovie;
         setIsFavorite(newFavoriteStatus);
-        setUserMovieList(prevList => {
-            const existingIndex = prevList.findIndex(m => m.tmdbId === updatedMovieEntry.tmdbId && m.media_type === updatedMovieEntry.media_type);
-            if (existingIndex > -1) {
-              const newList = [...prevList];
-              newList[existingIndex] = { ...newList[existingIndex], ...updatedMovieEntry };
-              return newList;
-            } else {
-              return [...prevList, updatedMovieEntry];
-            }
-          });
+        setUserMovieList((prevList) => {
+          const existingIndex = prevList.findIndex(
+            (m) =>
+              m.tmdbId === updatedMovieEntry.tmdbId &&
+              m.media_type === updatedMovieEntry.media_type
+          );
+          if (existingIndex > -1) {
+            const newList = [...prevList];
+            newList[existingIndex] = {
+              ...newList[existingIndex],
+              ...updatedMovieEntry,
+            };
+            return newList;
+          } else {
+            return [...prevList, updatedMovieEntry];
+          }
+        });
       } else {
         const errorResponse = responseData as { error: string };
         console.error("Erro ao atualizar favorito:", errorResponse);
@@ -225,52 +233,58 @@ function DetailsPage() {
 
   const handleRatingChange = async (newRating: number | null) => {
     if (!isAuthenticated || !token || !details || !details.id || !mediaType) {
-        if(!isAuthenticated) navigate('/login');
-        return;
+      if (!isAuthenticated) navigate("/login");
+      return;
     }
-    
-    const ratingToSubmit = newRating; 
-    
+
+    const ratingToSubmit = newRating;
+
     setRatingLoading(true);
     setRatingFeedback(null);
-    setError(null); 
+    setError(null);
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/user/movies`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           tmdbId: details.id,
           rating: ratingToSubmit,
-          media_type: mediaType 
+          media_type: mediaType,
         }),
       });
-      
+
       const responseData: UserMovie | { error: string } = await response.json();
 
       if (response.ok) {
         const updatedMovieEntry = responseData as UserMovie;
         setCurrentRating(ratingToSubmit);
-         setUserMovieList(prevList => {
-            const existingIndex = prevList.findIndex(m => m.tmdbId === updatedMovieEntry.tmdbId && m.media_type === updatedMovieEntry.media_type);
-            if (existingIndex > -1) {
-              const newList = [...prevList];
-              newList[existingIndex] = { ...newList[existingIndex], ...updatedMovieEntry };
-              return newList;
-            } else {
-               return [...prevList, updatedMovieEntry];
-            }
-          });
+        setUserMovieList((prevList) => {
+          const existingIndex = prevList.findIndex(
+            (m) =>
+              m.tmdbId === updatedMovieEntry.tmdbId &&
+              m.media_type === updatedMovieEntry.media_type
+          );
+          if (existingIndex > -1) {
+            const newList = [...prevList];
+            newList[existingIndex] = {
+              ...newList[existingIndex],
+              ...updatedMovieEntry,
+            };
+            return newList;
+          } else {
+            return [...prevList, updatedMovieEntry];
+          }
+        });
         setRatingFeedback("Nota atualizada!");
         setTimeout(() => setRatingFeedback(null), 2000);
-
       } else {
         const errorData = responseData as { error: string };
         console.error("Erro ao atualizar nota:", errorData);
-        setRatingFeedback(`Erro: ${errorData.error || 'Falha ao salvar nota'}`);
+        setRatingFeedback(`Erro: ${errorData.error || "Falha ao salvar nota"}`);
       }
     } catch (err) {
       console.error("Falha ao atualizar nota:", err);
@@ -282,11 +296,18 @@ function DetailsPage() {
 
   const openTrailer = () => {
     const officialTrailer = details?.videos?.results?.find(
-      (video) => video.official && video.site === "YouTube" && (video.type === "Trailer" || video.type === "Teaser")
+      (video) =>
+        video.official &&
+        video.site === "YouTube" &&
+        (video.type === "Trailer" || video.type === "Teaser")
     );
-    const targetTrailer = officialTrailer || details?.videos?.results?.find(
-        (video) => video.site === "YouTube" && (video.type === "Trailer" || video.type === "Teaser")
-    );
+    const targetTrailer =
+      officialTrailer ||
+      details?.videos?.results?.find(
+        (video) =>
+          video.site === "YouTube" &&
+          (video.type === "Trailer" || video.type === "Teaser")
+      );
 
     if (targetTrailer) {
       setTrailerKey(targetTrailer.key);
@@ -304,195 +325,242 @@ function DetailsPage() {
     );
   }
 
-  if (error && !details) { 
-    return <div className="text-center text-red-500 pt-28 text-xl bg-[#1E1A1A] min-h-screen">{error}</div>;
+  if (error && !details) {
+    return (
+      <div className="text-center text-red-500 pt-28 text-xl bg-[#1E1A1A] min-h-screen">
+        {error}
+      </div>
+    );
   }
 
   if (!details) {
-    return <div className="text-center text-gray-400 pt-28 text-xl bg-[#1E1A1A] min-h-screen">Detalhes não encontrados.</div>;
+    return (
+      <div className="text-center text-gray-400 pt-28 text-xl bg-[#1E1A1A] min-h-screen">
+        Detalhes não encontrados.
+      </div>
+    );
   }
 
-  const title = (details as MovieResponse).title || (details as ShowResponse).name;
-  const releaseDate = (details as MovieResponse).release_date || (details as ShowResponse).first_air_date;
-  const year = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
-  const genres = details.genres?.map((g) => g.name).join(', ') || 'N/A';
-  const runtimeOrSeasons = details.media_type === 'movie' 
-    ? `${(details as MovieResponse).runtime || '?'} min` 
-    : `${(details as ShowResponse).number_of_seasons || '?'} temporada(s)`;
-  const ratingTMDB = details.vote_average ? details.vote_average.toFixed(1) : 'N/A';
+  const title =
+    (details as MovieResponse).title || (details as ShowResponse).name;
+  const releaseDate =
+    (details as MovieResponse).release_date ||
+    (details as ShowResponse).first_air_date;
+  const year = releaseDate ? new Date(releaseDate).getFullYear() : "N/A";
+  const genres = details.genres?.map((g) => g.name).join(", ") || "N/A";
+  const runtimeOrSeasons =
+    details.media_type === "movie"
+      ? `${(details as MovieResponse).runtime || "?"} min`
+      : `${(details as ShowResponse).number_of_seasons || "?"} temporada(s)`;
+  const ratingTMDB = details.vote_average
+    ? details.vote_average.toFixed(1)
+    : "N/A";
 
-  const director = details.media_type === 'movie' ? details.credits?.crew?.find(c => c.job === 'Director')?.name : undefined;
-  const creators = details.media_type === 'tv' ? (details as ShowResponse).created_by?.map(c => c.name).join(', ') : undefined;
+  const director =
+    details.media_type === "movie"
+      ? details.credits?.crew?.find((c) => c.job === "Director")?.name
+      : undefined;
+  const creators =
+    details.media_type === "tv"
+      ? (details as ShowResponse).created_by?.map((c) => c.name).join(", ")
+      : undefined;
   const mainCast = details.credits?.cast?.slice(0, 5) || [];
 
   return (
-    <div className="bg-[#1E1A1A] text-white min-h-screen pt-20">
-        <button 
-            onClick={() => navigate(-1)}
-            className="absolute top-24 md:top-28 left-4 md:left-6 z-20 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 transition-colors"
-            aria-label="Voltar"
-        >
-            <ChevronLeft size={28} />
-        </button>
+    <div className="bg-[#1E1A1A] text-white min-h-screen">
       <div className="relative h-[60vh] md:h-[70vh]">
         <img
-          src={`https://image.tmdb.org/t/p/original${details.backdrop_path || details.poster_path}`}
+          src={`https://image.tmdb.org/t/p/original${
+            details.backdrop_path || details.poster_path
+          }`}
           alt={title || "Poster"}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1E1A1A] via-transparent to-transparent"></div>
-         <div className="absolute inset-0 bg-gradient-to-r from-[#1E1A1A] via-[#1E1A1A]/50 to-transparent md:w-3/4"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1E1A1A] via-[#1E1A1A]/50 to-transparent md:w-3/4"></div>
+
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-4 md:top-6 left-4 md:left-6 z-20 p-2 bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 transition-colors"
+          aria-label="Voltar"
+        >
+          <ChevronLeft size={28} />
+        </button>
 
         <div className="absolute bottom-0 left-0 p-4 md:p-10 max-w-3xl">
-          <h1 className="text-3xl md:text-5xl font-bold mb-2 drop-shadow-lg">{title}</h1>
-          <div className="flex items-center space-x-3 text-gray-300 mb-3 text-sm md:text-base">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold mb-2 drop-shadow-lg">
+            {title}
+          </h1>
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 text-gray-300 mb-3 text-sm md:text-base">
             <span>{year}</span>
             <span className="hidden md:inline">•</span>
             <span className="hidden md:inline">{runtimeOrSeasons}</span>
             <span className="flex items-center">
-              <Star className="w-4 h-4 text-yellow-400 mr-1" /> {ratingTMDB} (TMDB)
+              <Star className="w-4 h-4 text-yellow-400 mr-1" /> {ratingTMDB}{" "}
+              (TMDB)
             </span>
           </div>
-          <p className="text-gray-300 text-xs md:text-sm mb-4 line-clamp-3 md:line-clamp-4">{details.overview || "Sinopse não disponível."}</p>
+          <p className="text-gray-300 text-xs md:text-sm mb-4 line-clamp-3 md:line-clamp-4">
+            {details.overview || "Sinopse não disponível."}
+          </p>
           {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
-          <div className="flex flex-wrap gap-3 items-center">
-            <button 
+          
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
               onClick={openTrailer}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 md:py-3 md:px-6 rounded-lg flex items-center space-x-2 transition-transform duration-200 hover:scale-105 text-sm md:text-base"
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg flex items-center space-x-2 transition-colors text-sm md:text-base"
             >
-              <PlayCircle size={20}/>
+              <PlayCircle className="w-4 h-4 md:w-5 md:h-5" />
               <span>Assistir Trailer</span>
             </button>
+            
             {isAuthenticated && (
-                <>
-                    <button
-                        onClick={handleToggleFavorite}
-                        disabled={favoriteLoading}
-                        className={`p-2 md:p-3 rounded-full transition-colors ${isFavorite ? "bg-red-500 hover:bg-red-600" : "bg-gray-700 hover:bg-gray-600"} disabled:opacity-50`}
-                        aria-label={isFavorite ? "Remover dos Favoritos" : "Adicionar aos Favoritos"}
-                    >
-                        {favoriteLoading ? <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" /> : <Heart className={`w-5 h-5 md:w-6 md:h-6 ${isFavorite ? 'fill-current' : ''}`} />}
-                    </button>
-                    <div className="flex items-center space-x-1 bg-gray-700 p-1 md:p-2 rounded-lg">
-                        {[...Array(5)].map((_, i) => (
-                            <Star
-                            key={i}
-                            className={`w-5 h-5 md:w-6 md:h-6 cursor-pointer ${ (currentRating !== null && i < Math.round(currentRating / 2)) ? 'text-yellow-400 fill-current' : 'text-gray-400 hover:text-yellow-300'}`}
-                            onClick={() => handleRatingChange((i + 1) * 2)}
-                            />
-                        ))}
-                         {currentRating !== null && (
-                            <button 
-                                onClick={() => handleRatingChange(null)} 
-                                className="ml-1 text-xs text-gray-400 hover:text-white"
-                                title="Remover nota"
-                            >
-                                (x)
-                            </button>
-                        )}
-                        {ratingLoading && <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin ml-1 md:ml-2" />}
-                    </div>
-                </>
-            )}
-             {!isAuthenticated && (
-                 <button
-                    onClick={() => navigate('/login')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 md:py-3 md:px-6 rounded-lg flex items-center space-x-2 transition-colors text-sm md:text-base"
-                  >
-                    <Heart size={20}/> Login para Favoritar/Avaliar
-                  </button>
+              <button
+                onClick={handleToggleFavorite}
+                disabled={favoriteLoading}
+                className={`px-3 py-2 md:px-4 md:py-2 rounded-lg flex items-center space-x-2 transition-colors text-sm md:text-base ${
+                  isFavorite
+                    ? "bg-red-600 hover:bg-red-700 text-white"
+                    : "bg-gray-700 hover:bg-gray-600 text-white"
+                }`}
+              >
+                {favoriteLoading ? (
+                  <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                ) : (
+                  <Heart className={`w-4 h-4 md:w-5 md:h-5 ${isFavorite ? "fill-current" : ""}`} />
+                )}
+                <span>{isFavorite ? "Favorito" : "Favoritar"}</span>
+              </button>
             )}
           </div>
-           {ratingFeedback && <p className={`text-xs md:text-sm mt-2 ${ratingFeedback.startsWith("Erro") ? "text-red-400" : "text-green-400"}`}>{ratingFeedback}</p>}
         </div>
       </div>
 
-      <div className="p-4 md:p-10 max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div>
-            <h3 className="font-semibold text-md md:text-lg mb-1 text-red-400">Gêneros</h3>
-            <p className="text-gray-300 text-sm md:text-base">{genres}</p>
-          </div>
-          {director && (
-            <div>
-                <h3 className="font-semibold text-md md:text-lg mb-1 text-red-400">Diretor</h3>
-                <p className="text-gray-300 text-sm md:text-base">{director}</p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="bg-[#2a2626] rounded-lg p-6 mb-8">
+              <h2 className="text-2xl font-bold mb-4">Sinopse</h2>
+              <p className="text-gray-300 leading-relaxed">
+                {details.overview || "Sinopse não disponível."}
+              </p>
             </div>
-          )}
-           {creators && (
-             <div>
-                <h3 className="font-semibold text-md md:text-lg mb-1 text-red-400">Criado por</h3>
-                <p className="text-gray-300 text-sm md:text-base">{creators}</p>
-            </div>
-           )}
-        </div>
-        
-        {mainCast.length > 0 && (
-            <div className="mb-8">
-                <h2 className="text-xl md:text-2xl font-bold text-red-500 mb-4">Elenco Principal</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+
+            <div className="bg-[#2a2626] rounded-lg p-6 mb-8">
+              <h2 className="text-2xl font-bold mb-4">Elenco Principal</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 {mainCast.map((actor) => (
-                    <div key={actor.id} className="flex flex-col items-center text-center">
-                    <img
-                        src={actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : '/placeholder-person.png'}
-                        alt={actor.name}
-                        className="w-28 h-36 md:w-32 md:h-40 object-cover rounded-md mb-2 shadow-lg"
-                        onError={(e) => (e.currentTarget.src = '/placeholder-person.png')}
-                    />
-                    <p className="font-semibold text-xs md:text-sm">{actor.name}</p>
-                    {actor.character && <p className="text-xs text-gray-400">{actor.character}</p>}
+                  <div key={actor.id} className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden bg-gray-700">
+                      {actor.profile_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                          alt={actor.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <span className="text-xs">Foto</span>
+                        </div>
+                      )}
                     </div>
+                    <p className="text-sm font-medium text-white">{actor.name}</p>
+                    <p className="text-xs text-gray-400">{actor.character}</p>
+                  </div>
                 ))}
-                </div>
+              </div>
             </div>
-        )}
 
-        {details.media_type === 'tv' && (details as ShowResponse).seasons && ((details as ShowResponse).seasons?.length ?? 0) > 0 && (
-             <div className="mb-8">
-                <h2 className="text-xl md:text-2xl font-bold text-red-500 mb-4">Temporadas</h2>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-                    {(details as ShowResponse).seasons!.map(season => (
-                        season.poster_path && (season.season_number !== undefined && season.season_number > 0) && (
-                            <div key={season.id} className="bg-[#2a2626] p-2 md:p-3 rounded-lg shadow-md text-center">
-                                <img 
-                                    src={`https://image.tmdb.org/t/p/w300${season.poster_path}`} 
-                                    alt={season.name || `Temporada ${season.season_number}`}
-                                    className="w-full h-auto object-cover rounded mb-2"
-                                />
-                                <p className="font-semibold text-sm md:text-md">{season.name || `Temporada ${season.season_number}`}</p>
-                                {season.air_date && <p className="text-xs text-gray-400">Lançamento: {new Date(season.air_date).toLocaleDateString('pt-BR')}</p>}
-                                {typeof season.episode_count === 'number' && <p className="text-xs text-gray-400">{season.episode_count} episódios</p>}
-                            </div>
-                        )
+            <Comments
+              tmdbId={details.id}
+              mediaType={details.media_type}
+              title={title || ""}
+            />
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-[#2a2626] rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-4">Informações</h3>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-gray-400">Gêneros:</span>
+                  <p className="text-white">{genres}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Ano:</span>
+                  <p className="text-white">{year}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Duração:</span>
+                  <p className="text-white">{runtimeOrSeasons}</p>
+                </div>
+                {director && (
+                  <div>
+                    <span className="text-gray-400">Diretor:</span>
+                    <p className="text-white">{director}</p>
+                  </div>
+                )}
+                {creators && (
+                  <div>
+                    <span className="text-gray-400">Criado por:</span>
+                    <p className="text-white">{creators}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {isAuthenticated && (
+              <div className="bg-[#2a2626] rounded-lg p-6">
+                <h3 className="text-xl font-bold mb-4">Sua Avaliação</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => handleRatingChange(star)}
+                        disabled={ratingLoading}
+                        className={`text-2xl transition-colors ${
+                          currentRating && star <= currentRating
+                            ? "text-yellow-400"
+                            : "text-gray-400 hover:text-yellow-400"
+                        }`}
+                      >
+                        <Star className="w-6 h-6" />
+                      </button>
                     ))}
+                  </div>
+                  {ratingFeedback && (
+                    <p className={`text-sm ${
+                      ratingFeedback.includes("Erro") ? "text-red-400" : "text-green-400"
+                    }`}>
+                      {ratingFeedback}
+                    </p>
+                  )}
                 </div>
-            </div>
-        )}
-
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
+      {/* Modal do Trailer */}
       {showTrailerModal && trailerKey && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowTrailerModal(false)}
-        >
-          <div className="bg-[#1E1A1A] p-2 rounded-lg shadow-xl max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
-            <iframe
-              width="100%"
-              height="450"
-              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
-              title="YouTube video player"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="rounded"
-            ></iframe>
-             <button 
-                onClick={() => setShowTrailerModal(false)}
-                className="mt-3 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded"
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="relative w-full max-w-4xl">
+            <button
+              onClick={() => setShowTrailerModal(false)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 text-2xl"
             >
-                Fechar Trailer
+              ×
             </button>
+            <div className="relative pb-[56.25%] h-0">
+              <iframe
+                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+                title="Trailer"
+                className="absolute top-0 left-0 w-full h-full"
+                allowFullScreen
+              />
+            </div>
           </div>
         </div>
       )}

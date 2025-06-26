@@ -3,12 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Film, Mail, UserCircle, CalendarDays, Loader2 } from 'lucide-react';
 import MovieCard from '../components/movieListComponents/movieCard';
-import { MovieResult, TvResult, MovieDb, MovieResponse, ShowResponse } from "moviedb-promise";
+import tmdbService, { MovieResult, TvResult } from "../services/tmdbService";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-const moviedb = new MovieDb(TMDB_API_KEY);
-
 
 interface UserProfileData {
   name: string;
@@ -25,8 +22,9 @@ interface UserMovieListItem {
   media_type: 'movie' | 'tv';
 }
 
-type FavoriteDisplayItem = (MovieResult | TvResult) & { userFavoriteData?: UserMovieListItem };
-
+type FavoriteDisplayItem = (MovieResult | TvResult) & {
+  userFavoriteData: UserMovieListItem;
+};
 
 function ProfilePage() {
   const { isAuthenticated, token, isLoading: authLoading } = useAuth();
@@ -49,32 +47,6 @@ function ProfilePage() {
   };
 
   useEffect(() => {
-    if (!TMDB_API_KEY) {
-        console.error("Chave da API TMDB não configurada para buscar gêneros.");
-        return;
-    }
-    const fetchGenres = async () => {
-      try {
-        const [movieGenresRes, tvGenresRes] = await Promise.all([
-          moviedb.genreMovieList({ language: "pt-BR" }),
-          moviedb.genreTvList({ language: "pt-BR" })
-        ]);
-        const map: { [key: number]: string } = {};
-        movieGenresRes.genres?.forEach((g) => {
-          if (g.id !== undefined && g.name) map[g.id] = g.name;
-        });
-        tvGenresRes.genres?.forEach((g) => {
-          if (g.id !== undefined && g.name) map[g.id] = g.name;
-        });
-        setGenresMap(map);
-      } catch (error) {
-        console.error("Erro ao buscar gêneros do TMDB:", error);
-      }
-    };
-    fetchGenres();
-  }, []);
-
-  useEffect(() => {
     if (authLoading) return;
 
     if (!isAuthenticated) {
@@ -82,169 +54,165 @@ function ProfilePage() {
       return;
     }
 
-    const fetchProfileAndFavorites = async () => {
+    const fetchAllData = async () => {
       if (!token) return;
-      if (!TMDB_API_KEY && favoriteMoviesDetails.length > 0) { // Verifica se precisa da chave para buscar detalhes
-        console.error("Chave da API TMDB não configurada para buscar detalhes dos favoritos.");
-        setErrorLoadingProfile("Erro de configuração da API.");
-        setIsLoadingProfile(false);
-        setIsLoadingFavorites(false);
-        return;
-      }
-
 
       setIsLoadingProfile(true);
       setIsLoadingFavorites(true);
       setErrorLoadingProfile(null);
 
       try {
-        const profileResponse = await fetch(`${API_BASE_URL}/api/user/profile`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
+        // Buscar gêneros e dados do perfil em paralelo
+        const [genres, profileResponse, moviesResponse] = await Promise.all([
+          tmdbService.getAllGenres(),
+          fetch(`${API_BASE_URL}/api/user/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`${API_BASE_URL}/api/user/movies`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          })
+        ]);
+
+        // Processar gêneros
+        setGenresMap(genres);
+
+        // Processar perfil
         if (!profileResponse.ok) {
           const errorData = await profileResponse.json();
           throw new Error(errorData.error || 'Falha ao buscar perfil do usuário.');
         }
         const profile: UserProfileData = await profileResponse.json();
         setProfileData(profile);
-        setIsLoadingProfile(false);
 
-        const moviesResponse = await fetch(`${API_BASE_URL}/api/user/movies`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
+        // Processar filmes favoritos
         if (!moviesResponse.ok) {
-            const errorData = await moviesResponse.json();
-            throw new Error(errorData.error || 'Falha ao buscar lista de filmes do usuário.');
+          const errorData = await moviesResponse.json();
+          throw new Error(errorData.error || 'Falha ao buscar lista de filmes do usuário.');
         }
         const userMovieListFromAPI: UserMovieListItem[] = await moviesResponse.json();
         const favoriteItems = userMovieListFromAPI.filter(movie => movie.favorite);
         
         if (profile && favoriteItems.length !== profile.favoriteMoviesCount) {
-            setProfileData(prev => prev ? {...prev, favoriteMoviesCount: favoriteItems.length} : null);
+          setProfileData(prev => prev ? {...prev, favoriteMoviesCount: favoriteItems.length} : null);
         }
 
         if (favoriteItems.length > 0) {
-          const detailsPromises = favoriteItems.map(async (favItem) => {
-            if (!favItem.media_type) {
-                console.warn(`Item favorito com tmdbId ${favItem.tmdbId} não possui media_type. Pulando.`);
-                return null;
-            }
-            try {
-              let tmdbDetail: MovieResponse | ShowResponse | undefined;
-              let constructedDetail: MovieResult | TvResult | undefined;
-
-              if (favItem.media_type === 'movie') {
-                tmdbDetail = await moviedb.movieInfo({ id: favItem.tmdbId, language: "pt-BR" });
-                if (tmdbDetail && tmdbDetail.id) {
-                  constructedDetail = { ...(tmdbDetail as MovieResponse), media_type: 'movie' } as MovieResult;
-                }
-              } else if (favItem.media_type === 'tv') {
-                tmdbDetail = await moviedb.tvInfo({ id: favItem.tmdbId, language: "pt-BR" });
-                if (tmdbDetail && tmdbDetail.id) {
-                  constructedDetail = { ...(tmdbDetail as ShowResponse), media_type: 'tv' } as TvResult;
-                }
-              } else {
-                console.warn(`media_type desconhecido: ${favItem.media_type} para tmdbId ${favItem.tmdbId}`);
-                return null;
-              }
-
-              if (constructedDetail) {
-                return { ...constructedDetail, userFavoriteData: favItem } as FavoriteDisplayItem;
-              }
-            } catch (error) {
-              console.warn(`Erro ao buscar detalhes para ${favItem.media_type} ID ${favItem.tmdbId}:`, error);
-              return null;
-            }
-            return null;
-          });
-
-          const resolvedDetails = (await Promise.all(detailsPromises)).filter(detail => detail !== null) as FavoriteDisplayItem[];
-          setFavoriteMoviesDetails(resolvedDetails);
+          try {
+            const details = await tmdbService.getMultipleItems(favoriteItems);
+            setFavoriteMoviesDetails(details as unknown as FavoriteDisplayItem[]);
+          } catch (error) {
+            console.error("Erro ao buscar detalhes dos favoritos:", error);
+            setErrorLoadingProfile("Erro ao carregar detalhes dos favoritos.");
+          }
         } else {
           setFavoriteMoviesDetails([]);
         }
-      } catch (error: any) {
-        console.error("Erro ao carregar dados do perfil ou lista de filmes:", error);
-        setErrorLoadingProfile(error.message || "Ocorreu um erro ao carregar os dados.");
-        setIsLoadingProfile(false);
+      } catch (error) {
+        console.error("Erro ao buscar dados do perfil:", error);
+        setErrorLoadingProfile(error instanceof Error ? error.message : 'Erro desconhecido');
       } finally {
+        setIsLoadingProfile(false);
         setIsLoadingFavorites(false);
       }
     };
 
-    fetchProfileAndFavorites();
-  }, [isAuthenticated, token, navigate, authLoading, favoriteMoviesDetails.length]); // Adicionado favoriteMoviesDetails.length para re-trigger se mudar
+    fetchAllData();
+  }, [isAuthenticated, token, authLoading, navigate]);
 
   if (authLoading || isLoadingProfile) {
     return (
-      <div className="bg-[#1E1A1A] text-white min-h-screen flex flex-col items-center justify-center p-4 pt-28">
+      <div className="min-h-screen bg-[#1E1A1A] flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-red-500" />
-        <p className="mt-4 text-xl">Carregando perfil...</p>
       </div>
     );
   }
 
-  if (errorLoadingProfile || !profileData) {
-    return (
-      <div className="bg-[#1E1A1A] text-white min-h-screen flex flex-col items-center justify-center p-4 pt-28">
-        <p className="text-xl text-red-500">{errorLoadingProfile || "Não foi possível carregar os dados do perfil."}</p>
-      </div>
-    );
+  if (!isAuthenticated) {
+    return null; // Será redirecionado pelo useEffect
   }
 
   return (
-    <div className="bg-[#1E1A1A] text-white min-h-screen p-4 md:p-8 pt-28">
-      <div className="max-w-5xl mx-auto">
-        <section className="bg-[#373232] p-6 rounded-lg shadow-xl mb-10">
-          <h1 className="text-3xl font-bold text-red-500 mb-6 border-b-2 border-red-500 pb-2">
-            Meu Perfil
-          </h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-lg">
-            <div className="flex items-center space-x-3">
-              <UserCircle className="w-7 h-7 text-red-400" />
-              <p><span className="font-semibold">Nome:</span> {profileData.name}</p>
+    <div className="min-h-screen bg-[#1E1A1A] text-white pt-24">
+      <div className="container mx-auto px-4">
+        {errorLoadingProfile && (
+          <div className="mb-6 p-4 bg-red-900/20 border border-red-500 rounded-lg">
+            <p className="text-red-400">{errorLoadingProfile}</p>
+          </div>
+        )}
+
+        {/* Header do Perfil */}
+        <div className="bg-[#2a2626] rounded-lg p-6 mb-8">
+          <div className="flex items-center space-x-4 mb-6">
+            <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center">
+              <UserCircle className="w-12 h-12 text-white" />
             </div>
-            <div className="flex items-center space-x-3">
-              <Mail className="w-7 h-7 text-red-400" />
-              <p><span className="font-semibold">E-mail:</span> {profileData.email}</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Film className="w-7 h-7 text-red-400" />
-              <p><span className="font-semibold">Favoritos:</span> {profileData.favoriteMoviesCount}</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <CalendarDays className="w-7 h-7 text-red-400" />
-              <p><span className="font-semibold">Membro desde:</span> {formatDate(profileData.createdAt)}</p>
+            <div>
+              <h1 className="text-3xl font-bold">{profileData?.name || 'Usuário'}</h1>
+              <p className="text-gray-400 flex items-center mt-1">
+                <Mail className="w-4 h-4 mr-2" />
+                {profileData?.email || 'email@example.com'}
+              </p>
             </div>
           </div>
-        </section>
 
-        <section>
-          <h2 className="text-2xl font-bold text-red-500 mb-6 border-b-2 border-red-500 pb-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-[#1E1A1A] p-4 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Film className="w-5 h-5 text-red-500" />
+                <span className="text-gray-400">Favoritos</span>
+              </div>
+              <p className="text-2xl font-bold mt-1">
+                {profileData?.favoriteMoviesCount || 0}
+              </p>
+            </div>
+
+            <div className="bg-[#1E1A1A] p-4 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <CalendarDays className="w-5 h-5 text-red-500" />
+                <span className="text-gray-400">Membro desde</span>
+              </div>
+              <p className="text-lg font-semibold mt-1">
+                {profileData?.createdAt ? formatDate(profileData.createdAt) : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Seção de Favoritos */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-6 flex items-center">
+            <Film className="w-6 h-6 mr-2 text-red-500" />
             Meus Favoritos
           </h2>
+
           {isLoadingFavorites ? (
-            <div className="flex justify-center items-center py-10">
-              <Loader2 className="h-10 w-10 animate-spin text-red-500" />
-              <p className="ml-3 text-lg">Carregando favoritos...</p>
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-red-500" />
             </div>
           ) : favoriteMoviesDetails.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {favoriteMoviesDetails.map((item) => (
                 <MovieCard
                   key={`${item.media_type}-${item.id}`}
-                  movie={item}
+                  movie={item as any}
                   showGenres={true}
+                  showHD={true}
                   genresMap={genresMap}
                 />
               ))}
             </div>
           ) : (
-            <p className="text-center text-gray-400 py-10 text-lg">
-              Você ainda não adicionou nenhum filme ou série aos seus favoritos.
-            </p>
+            <div className="text-center py-12">
+              <Film className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-400 mb-2">
+                Nenhum favorito ainda
+              </h3>
+              <p className="text-gray-500">
+                Comece a adicionar filmes e séries aos seus favoritos!
+              </p>
+            </div>
           )}
-        </section>
+        </div>
       </div>
     </div>
   );
