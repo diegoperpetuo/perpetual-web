@@ -50,41 +50,42 @@ const MovieCard = ({ movie, showGenres, showHD, genresMap }: MovieCardProps) => 
   return (
     <div 
     onClick={() => navigate(`/detalhes/${mediaType}/${movie.id}`)}
-    className="relative w-40 sm:w-48 text-white flex-shrink-0 transition-transform transform hover:scale-105 hover:cursor-pointer">
+    className="relative w-28 xs:w-32 sm:w-40 md:w-48 text-white flex-shrink-0 transition-transform transform hover:scale-105 hover:cursor-pointer">
       <div className="overflow-hidden rounded-xl">
         <img
           src={`https://image.tmdb.org/t/p/w500${movie.poster_path || movie.backdrop_path}`}
           alt={displayTitle}
-          className="w-full h-64 object-cover transition-transform duration-300 ease-in-out hover:scale-110"
+          className="w-full h-40 xs:h-44 sm:h-56 md:h-64 object-cover transition-transform duration-300 ease-in-out hover:scale-110"
         />
       </div>
-      <div className="absolute bottom-0 left-0 w-full p-2 bg-gradient-to-t from-black to-transparent rounded-b-xl pointer-events-none">
-        <h3 className="text-sm font-semibold truncate">{displayTitle}</h3>
-        <div className="flex flex-wrap items-center gap-1 text-xs mt-1">
-          {showHD && <span className="bg-red-600 px-1 rounded">HD</span>}
-          <Clock size={12} />
-          <span>{duration}</span>
+      <div className="absolute bottom-0 left-0 w-full p-1 xs:p-2 bg-gradient-to-t from-black to-transparent rounded-b-xl pointer-events-none">
+        <h3 className="text-xs xs:text-sm font-semibold truncate">{displayTitle}</h3>
+        <div className="flex flex-wrap items-center gap-1 text-[10px] xs:text-xs mt-1">
+          {showHD && <span className="bg-red-600 px-1 rounded text-[9px] xs:text-[10px]">HD</span>}
+          <Clock size={10} className="xs:w-3 xs:h-3" />
+          <span className="text-[9px] xs:text-[10px]">{duration}</span>
           {showGenres && genresMap &&
-            movie.genre_ids?.slice(0, 2).map((id) => (
+            movie.genre_ids?.slice(0, 1).map((id) => (
               <span
                 key={id}
-                className="bg-red-600 px-1 py-0.5 rounded-full text-[11px]"
+                className="bg-red-600 px-1 py-0.5 rounded-full text-[8px] xs:text-[10px]"
               >
                 {genresMap[id] || "Gênero"}
               </span>
             ))}
         </div>
       </div>
-      <div className="absolute top-2 left-2 px-2 py-1 bg-black/70 text-xs rounded-full flex items-center gap-1">
-        <Clock size={12} /> <span>{duration}</span>
+      <div className="absolute top-1 xs:top-2 left-1 xs:left-2 px-1 xs:px-2 py-0.5 xs:py-1 bg-black/70 text-[8px] xs:text-xs rounded-full flex items-center gap-1">
+        <Clock size={8} className="xs:w-3 xs:h-3" /> 
+        <span className="text-[8px] xs:text-[10px]">{duration}</span>
       </div>
-      <div className="absolute top-2 right-2 px-2 py-1 bg-black/70 text-xs rounded-full flex items-center gap-1">
-        <Star size={12} className="text-yellow-400" />
-        <span>{movie.vote_average?.toFixed(1)}</span>
+      <div className="absolute top-1 xs:top-2 right-1 xs:right-2 px-1 xs:px-2 py-0.5 xs:py-1 bg-black/70 text-[8px] xs:text-xs rounded-full flex items-center gap-1">
+        <Star size={8} className="text-yellow-400 xs:w-3 xs:h-3" />
+        <span className="text-[8px] xs:text-[10px]">{movie.vote_average?.toFixed(1)}</span>
       </div>
       {showGenres && (
         <div className="absolute inset-0 flex justify-center items-center pointer-events-none">
-          <PlayCircle size={40} className="text-white/80 hover:text-white transition-colors" />
+          <PlayCircle size={32} className="text-white/80 hover:text-white transition-colors xs:w-10 xs:h-10" />
         </div>
       )}
     </div>

@@ -122,7 +122,7 @@ function ProfilePage() {
   if (authLoading || isLoadingProfile) {
     return (
       <div className="min-h-screen bg-[#1E1A1A] flex items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+        <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 animate-spin text-red-500" />
       </div>
     );
   }
@@ -187,7 +187,7 @@ function ProfilePage() {
 
           {isLoadingFavorites ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-red-500" />
+              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-red-500" />
             </div>
           ) : favoriteMoviesDetails.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">

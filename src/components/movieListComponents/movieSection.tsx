@@ -85,30 +85,32 @@ const MovieSection = ({ title, type }: { title: string; type: SectionType }) => 
   };
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
-        <div className="flex space-x-2">
+    <div className="mb-6 sm:mb-8">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 px-3 sm:px-4 md:px-6">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">{title}</h2>
+        <div className="flex space-x-0.5 xs:space-x-1 sm:space-x-2">
           <button
             onClick={() => scroll("left")}
-            className="p-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+            className="p-1 xs:p-1.5 sm:p-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors shadow-md active:scale-90 focus:outline-none focus:ring-2 focus:ring-red-400"
+            style={{ minWidth: 0, minHeight: 0 }}
             aria-label="Rolar para esquerda"
           >
-            <ChevronLeft className="w-5 h-5 text-white" />
+            <ChevronLeft className="w-4 h-4 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-white" />
           </button>
           <button
             onClick={() => scroll("right")}
-            className="p-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+            className="p-1 xs:p-1.5 sm:p-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors shadow-md active:scale-90 focus:outline-none focus:ring-2 focus:ring-red-400"
+            style={{ minWidth: 0, minHeight: 0 }}
             aria-label="Rolar para direita"
           >
-            <ChevronRight className="w-5 h-5 text-white" />
+            <ChevronRight className="w-4 h-4 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-white" />
           </button>
         </div>
       </div>
 
       <div
         ref={carouselRef}
-        className="flex space-x-4 overflow-x-auto scrollbar-hide scroll-smooth"
+        className="flex space-x-2 sm:space-x-3 md:space-x-4 overflow-x-auto no-scrollbar scroll-smooth px-3 sm:px-4 md:px-6"
       >
         {items.map((item) => (
           <div key={item.id} className="flex-shrink-0">

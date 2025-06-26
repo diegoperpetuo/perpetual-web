@@ -320,7 +320,7 @@ function DetailsPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-[#1E1A1A] pt-20">
-        <Loader2 className="h-16 w-16 animate-spin text-red-500" />
+        <Loader2 className="h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16 animate-spin text-red-500" />
       </div>
     );
   }
@@ -513,19 +513,19 @@ function DetailsPage() {
               <div className="bg-[#2a2626] rounded-lg p-6">
                 <h3 className="text-xl font-bold mb-4">Sua Avaliação</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1 sm:space-x-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         onClick={() => handleRatingChange(star)}
                         disabled={ratingLoading}
-                        className={`text-2xl transition-colors ${
+                        className={`text-lg sm:text-xl md:text-2xl transition-colors ${
                           currentRating && star <= currentRating
                             ? "text-yellow-400"
                             : "text-gray-400 hover:text-yellow-400"
                         }`}
                       >
-                        <Star className="w-6 h-6" />
+                        <Star className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
                       </button>
                     ))}
                   </div>

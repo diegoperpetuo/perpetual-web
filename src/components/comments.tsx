@@ -223,7 +223,7 @@ const Comments: React.FC<CommentsProps> = ({ tmdbId, mediaType, title }) => {
       <div className="space-y-4">
         {isLoading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-red-500" />
           </div>
         ) : error && comments.length === 0 ? (
           <div className="text-center py-8">

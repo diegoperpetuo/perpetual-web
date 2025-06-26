@@ -3,3 +3,68 @@
 body{
   background-color: #1E1A1A;
 }
+
+/* Esconder barras de rolagem para Webkit (Chrome, Safari, Edge) */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* Classe adicional para garantir que as barras de rolagem fiquem escondidas */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Melhorias de responsividade */
+@media (max-width: 375px) {
+  /* iPhone SE e telas muito pequenas */
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+/* Melhorar a experiência de toque em dispositivos móveis */
+@media (hover: none) and (pointer: coarse) {
+  /* Dispositivos com tela de toque */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Melhorar espaçamento para toque */
+  .touch-target {
+    padding: 0.75rem;
+  }
+}
+
+/* Otimizações para telas pequenas */
+@media (max-width: 640px) {
+  /* Reduzir tamanhos de fonte em telas muito pequenas */
+  .text-responsive {
+    font-size: 0.875rem;
+  }
+  
+  /* Melhorar espaçamento */
+  .space-responsive {
+    gap: 0.5rem;
+  }
+}
+
+/* Melhorar performance de animações em dispositivos móveis */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
