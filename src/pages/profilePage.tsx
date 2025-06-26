@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Film, Mail, UserCircle, CalendarDays, Loader2 } from 'lucide-react';
 import MovieCard from '../components/movieListComponents/movieCard';
-import tmdbService, { MovieResult, TvResult, MovieResponse, ShowResponse } from "../services/tmdbService";
+import tmdbService, { MovieResult, TvResult } from "../services/tmdbService";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 

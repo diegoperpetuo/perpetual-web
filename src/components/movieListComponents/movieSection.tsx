@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import MovieCard from "./movieCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import tmdbService, { MovieResult, TvResult } from "../../services/tmdbService";
+import tmdbService from "../../services/tmdbService";
 
 type SectionType = "popular" | "now_playing" | "tv";
 

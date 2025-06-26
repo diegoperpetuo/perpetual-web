@@ -69,7 +69,6 @@ function HeroBanner() {
     onSwipedLeft: () => setCurrentIndex((prev) => (prev + 1) % movies.length),
     onSwipedRight: () =>
       setCurrentIndex((prev) => (prev - 1 + movies.length) % movies.length),
-    preventDefaultTouchmoveEvent: true,
     trackMouse: true,
   });
 

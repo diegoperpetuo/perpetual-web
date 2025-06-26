@@ -1,7 +1,7 @@
 import { Search, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import tmdbService from "../../services/tmdbService";
+import tmdbService, { MovieResult, TvResult } from "../../services/tmdbService";
 
 interface SearchBarProps {
   query: string;
@@ -40,17 +40,19 @@ const SearchBar: React.FC<SearchBarProps> = ({ query, setQuery, titles, setTitle
       if (data.results) {
         const filteredTitles = data.results
           .filter(
-            (item: { title?: string; name?: string; media_type: string }) =>
-              (item.title || item.name) &&
-              item.media_type !== "person" &&
-              (item.title?.toLowerCase().includes(value.toLowerCase()) ||
-                item.name?.toLowerCase().includes(value.toLowerCase()))
+            (item: MovieResult | TvResult) => {
+              const title = 'title' in item ? item.title : (item as TvResult).name;
+              return title && title.toLowerCase().includes(value.toLowerCase());
+            }
           )
-          .map((item: { id: string; title?: string; name?: string; media_type: string }) => ({
-            id: item.id,
-            title: item.title || item.name || 'Título Desconhecido',
-            media_type: item.media_type,
-          }));
+          .map((item: MovieResult | TvResult) => {
+            const title = 'title' in item ? item.title : (item as TvResult).name;
+            return {
+              id: item.id.toString(),
+              title: title || 'Título Desconhecido',
+              media_type: item.media_type || 'movie',
+            };
+          });
         setTitles(filteredTitles);
       } else {
         setTitles([]);
