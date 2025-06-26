@@ -92,7 +92,7 @@ const MobileSearch: React.FC<MobileSearchProps> = ({
     setQuery(title.title);
     setTitles([]);
     onClose();
-    navigate(`/${title.media_type}/${title.id}`);
+    navigate(`/detalhes/${title.media_type}/${title.id}`);
   };
 
   const clearSearch = () => {

@@ -74,7 +74,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ query, setQuery, titles, setTitle
     setQuery(title.title);
     setTitles([]);
     setIsOpen(false);
-    navigate(`/${title.media_type}/${title.id}`);
+    navigate(`/detalhes/${title.media_type}/${title.id}`);
   };
 
   const clearSearch = () => {
