@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, Send, Loader2, User, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -29,42 +29,52 @@ const Comments: React.FC<CommentsProps> = ({ tmdbId, mediaType, title }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitFeedback, setSubmitFeedback] = useState<string | null>(null);
+  const [lastFetchKey, setLastFetchKey] = useState<string>('');
 
-  // Buscar comentários existentes
-  useEffect(() => {
-    const fetchComments = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/comments?mediaType=${mediaType}&tmdbId=${tmdbId}`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+  // Função memoizada para buscar comentários
+  const fetchComments = useCallback(async () => {
+    const fetchKey = `${mediaType}-${tmdbId}`;
+    
+    // Evitar requisições duplicadas
+    if (lastFetchKey === fetchKey && comments.length > 0) {
+      return;
+    }
 
-        if (response.ok) {
-          const commentsData: Comment[] = await response.json();
-          setComments(commentsData);
-        } else {
-          const errorData = await response.json();
-          setError(errorData.error || 'Erro ao carregar comentários');
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/comments?mediaType=${mediaType}&tmdbId=${tmdbId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
-      } catch (err) {
-        console.error('Erro ao buscar comentários:', err);
-        setError('Erro de conexão ao carregar comentários');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      );
 
+      if (response.ok) {
+        const commentsData: Comment[] = await response.json();
+        setComments(commentsData);
+        setLastFetchKey(fetchKey);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Erro ao carregar comentários');
+      }
+    } catch (err) {
+      console.error('Erro ao buscar comentários:', err);
+      setError('Erro de conexão ao carregar comentários');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [tmdbId, mediaType, lastFetchKey, comments.length]);
+
+  // Buscar comentários apenas quando tmdbId ou mediaType mudarem
+  useEffect(() => {
     if (tmdbId && mediaType) {
       fetchComments();
     }
-  }, [tmdbId, mediaType]);
+  }, [tmdbId, mediaType, fetchComments]);
 
   // Enviar novo comentário
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -82,6 +92,11 @@ const Comments: React.FC<CommentsProps> = ({ tmdbId, mediaType, title }) => {
 
     if (newComment.length > 500) {
       setError('O comentário deve ter no máximo 500 caracteres');
+      return;
+    }
+
+    // Evitar envio duplicado
+    if (isSubmitting) {
       return;
     }
 

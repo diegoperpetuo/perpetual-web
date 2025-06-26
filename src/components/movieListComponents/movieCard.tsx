@@ -11,9 +11,41 @@ interface MovieCardProps {
 
 const MovieCard = ({ movie, showGenres, showHD, genresMap }: MovieCardProps) => {
   const displayTitle = (movie as MovieResult).title || (movie as TvResult).name;
-
   const mediaType = (movie as MovieResult).title ? "movie" : "tv";
   const navigate = useNavigate();
+
+  // Função para formatar o tempo
+  const formatDuration = (minutes: number | undefined): string => {
+    if (!minutes || minutes <= 0) return "N/A";
+    
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:00`;
+    } else {
+      return `${mins}min`;
+    }
+  };
+
+  // Obter runtime/duration do filme ou série
+  const getDuration = (): string => {
+    // Para filmes, tentar usar runtime se disponível
+    if (mediaType === "movie" && (movie as any).runtime) {
+      return formatDuration((movie as any).runtime);
+    }
+    
+    // Para séries, mostrar número de temporadas se disponível
+    if (mediaType === "tv" && (movie as any).number_of_seasons) {
+      const seasons = (movie as any).number_of_seasons;
+      return `${seasons} temp${seasons > 1 ? 's' : ''}`;
+    }
+    
+    // Fallback para quando não temos informações de duração
+    return "N/A";
+  };
+
+  const duration = getDuration();
 
   return (
     <div 
@@ -31,7 +63,7 @@ const MovieCard = ({ movie, showGenres, showHD, genresMap }: MovieCardProps) => 
         <div className="flex flex-wrap items-center gap-1 text-xs mt-1">
           {showHD && <span className="bg-red-600 px-1 rounded">HD</span>}
           <Clock size={12} />
-          <span>3:12:00</span>
+          <span>{duration}</span>
           {showGenres && genresMap &&
             movie.genre_ids?.slice(0, 2).map((id) => (
               <span
@@ -44,7 +76,7 @@ const MovieCard = ({ movie, showGenres, showHD, genresMap }: MovieCardProps) => 
         </div>
       </div>
       <div className="absolute top-2 left-2 px-2 py-1 bg-black/70 text-xs rounded-full flex items-center gap-1">
-        <Clock size={12} /> <span>3:12:00</span>
+        <Clock size={12} /> <span>{duration}</span>
       </div>
       <div className="absolute top-2 right-2 px-2 py-1 bg-black/70 text-xs rounded-full flex items-center gap-1">
         <Star size={12} className="text-yellow-400" />

@@ -1,54 +1,74 @@
 import { useEffect, useState, useRef } from "react";
-import { MovieDb, MovieResult, TvResult } from "moviedb-promise";
 import MovieCard from "./movieCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-const moviedb = new MovieDb(TMDB_API_KEY);
+import tmdbService, { MovieResult, TvResult } from "../../services/tmdbService";
 
 type SectionType = "popular" | "now_playing" | "tv";
 
 const MovieSection = ({ title, type }: { title: string; type: SectionType }) => {
-  const [items, setItems] = useState<(MovieResult | TvResult)[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [genresMap, setGenresMap] = useState<{ [key: number]: string }>({});
   const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!TMDB_API_KEY) {
-        console.error("Chave da API TMDB não configurada para MovieSection (genres).");
-        return;
-    }
     const fetchGenres = async () => {
-      let movieGenres = await moviedb.genreMovieList({ language: "pt-BR" });
-      let tvGenres = await moviedb.genreTvList({ language: "pt-BR" });
-      const map: { [key: number]: string } = {};
-      movieGenres.genres?.forEach((g) => {
-        if (g.id !== undefined && g.name) map[g.id] = g.name;
-      });
-      tvGenres.genres?.forEach((g) => {
-        if (g.id !== undefined && g.name) map[g.id] = g.name;
-      });
-      setGenresMap(map);
+      try {
+        const genres = await tmdbService.getAllGenres();
+        setGenresMap(genres);
+      } catch (error) {
+        console.error("Erro ao buscar gêneros:", error);
+      }
     };
     fetchGenres();
   }, []);
 
   useEffect(() => {
-    if (!TMDB_API_KEY) {
-        console.error("Chave da API TMDB não configurada para MovieSection (data).");
-        setItems([]);
-        return;
-    }
     const fetchData = async () => {
-      let res;
-      if (type === "popular") {
-        res = await moviedb.moviePopular({language: "pt-BR"});
-      } else if (type === "now_playing") {
-        res = await moviedb.movieNowPlaying({language: "pt-BR"});
-      } else {
-        res = await moviedb.tvPopular({language: "pt-BR"});
+      try {
+        let res;
+        if (type === "popular") {
+          res = await tmdbService.getPopularMovies();
+        } else if (type === "now_playing") {
+          res = await tmdbService.getNowPlayingMovies();
+        } else {
+          res = await tmdbService.getPopularTVShows();
+        }
+        
+        const basicItems = res.results || [];
+        
+        // Para filmes, buscar detalhes completos incluindo runtime
+        if (type !== "tv") {
+          const detailedItems = await Promise.all(
+            basicItems.slice(0, 10).map(async (item) => {
+              try {
+                const details = await tmdbService.getMovieDetails(item.id);
+                return { ...item, runtime: details.runtime };
+              } catch (error) {
+                console.error(`Erro ao buscar detalhes do filme ${item.id}:`, error);
+                return item;
+              }
+            })
+          );
+          setItems(detailedItems);
+        } else {
+          // Para séries, buscar detalhes completos incluindo número de temporadas
+          const detailedItems = await Promise.all(
+            basicItems.slice(0, 10).map(async (item) => {
+              try {
+                const details = await tmdbService.getTVShowDetails(item.id);
+                return { ...item, number_of_seasons: details.number_of_seasons };
+              } catch (error) {
+                console.error(`Erro ao buscar detalhes da série ${item.id}:`, error);
+                return item;
+              }
+            })
+          );
+          setItems(detailedItems);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+        setItems([]);
       }
-      setItems(res.results || []);
     };
     fetchData();
   }, [type]);
@@ -65,40 +85,43 @@ const MovieSection = ({ title, type }: { title: string; type: SectionType }) => 
   };
 
   return (
-    <section className="my-8">
-      <div className="flex justify-between items-center mb-3 px-4">
-        <h2 className="text-xl font-semibold text-white">{title}</h2>
-        <button className="text-sm text-white/70 hover:underline">View all →</button>
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => scroll("left")}
+            className="p-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+            aria-label="Rolar para esquerda"
+          >
+            <ChevronLeft className="w-5 h-5 text-white" />
+          </button>
+          <button
+            onClick={() => scroll("right")}
+            className="p-2 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+            aria-label="Rolar para direita"
+          >
+            <ChevronRight className="w-5 h-5 text-white" />
+          </button>
+        </div>
       </div>
-      <div className="relative">
-        <button
-          onClick={() => scroll("left")}
-          className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 text-white p-2 rounded-full hover:bg-black"
-        >
-          <ChevronLeft size={24} />
-        </button>
-        <div
-          className="flex gap-4 overflow-x-hidden overflow-y-hidden scrollbar-hide px-4 no-scrollbar py-4"
-          ref={carouselRef}
-        >
-          {items.map((item) => (
+
+      <div
+        ref={carouselRef}
+        className="flex space-x-4 overflow-x-auto scrollbar-hide scroll-smooth"
+      >
+        {items.map((item) => (
+          <div key={item.id} className="flex-shrink-0">
             <MovieCard
-              key={item.id}
               movie={item}
-              showGenres={type === "popular" || type === "tv"}
-              showHD={type === "now_playing"}
+              showGenres={true}
+              showHD={true}
               genresMap={genresMap}
             />
-          ))}
-        </div>
-        <button
-          onClick={() => scroll("right")}
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-black/50 text-white p-2 rounded-full hover:bg-black"
-        >
-          <ChevronRight size={24} />
-        </button>
+          </div>
+        ))}
       </div>
-    </section>
+    </div>
   );
 };
 

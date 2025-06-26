@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSwipeable } from "react-swipeable";
 import { motion, AnimatePresence } from "framer-motion";
-
-const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY
+import tmdbService from "../services/tmdbService";
 
 function HeroBanner() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -25,48 +24,33 @@ function HeroBanner() {
   };
 
   const fetchGenres = async () => {
-    if (!TMDB_API_KEY) {
-        console.error("Chave da API TMDB não configurada para HeroBanner (genres).");
-        return;
-    }
     try {
-      const res = await fetch(
-        `https://api.themoviedb.org/3/genre/movie/list?language=pt-BR&api_key=${TMDB_API_KEY}`
-      );
-      const data = await res.json();
-      const genreMap: { [key: number]: string } = {};
-      data.genres.forEach((g: { id: number; name: string }) => {
-        genreMap[g.id] = g.name;
-      });
-      setGenres(genreMap);
+      const genresData = await tmdbService.getAllGenres();
+      setGenres(genresData);
     } catch (error) {
       console.error("Erro ao buscar gêneros:", error);
     }
   };
 
   const fetchMovies = async () => {
-    if (!TMDB_API_KEY) {
-        console.error("Chave da API TMDB não configurada para HeroBanner (movies).");
-        return;
-    }
     try {
-      const res = await fetch(
-        `https://api.themoviedb.org/3/trending/movie/day?language=pt-BR&api_key=${TMDB_API_KEY}`
-      );
-      const data = await res.json();
+      const trendingData = await tmdbService.getTrendingMovies();
+      const data = trendingData.results || [];
 
       const today = new Date();
-      const filtered = data.results
+      const filtered = data
         .filter((movie: any) => new Date(movie.release_date) <= today)
         .slice(0, 5);
 
       const detailed = await Promise.all(
         filtered.map(async (movie: any) => {
-          const resDetails = await fetch(
-            `https://api.themoviedb.org/3/movie/${movie.id}?language=pt-BR&api_key=${TMDB_API_KEY}`
-          );
-          const details = await resDetails.json();
-          return { ...movie, runtime: details.runtime };
+          try {
+            const details = await tmdbService.getMovieDetails(movie.id);
+            return { ...movie, runtime: details.runtime };
+          } catch (error) {
+            console.error(`Erro ao buscar detalhes do filme ${movie.id}:`, error);
+            return { ...movie, runtime: 0 };
+          }
         })
       );
 
@@ -81,115 +65,167 @@ function HeroBanner() {
     fetchMovies();
   }, []);
 
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => setCurrentIndex((i) => (i + 1) % movies.length),
+  const handlers = useSwipeable({
+    onSwipedLeft: () => setCurrentIndex((prev) => (prev + 1) % movies.length),
     onSwipedRight: () =>
-      setCurrentIndex((i) => (i === 0 ? movies.length - 1 : i - 1)),
-    preventScrollOnSwipe: true,
+      setCurrentIndex((prev) => (prev - 1 + movies.length) % movies.length),
+    preventDefaultTouchmoveEvent: true,
     trackMouse: true,
   });
 
-  const handleNext = () => {
-    setCurrentIndex((i) => (i + 1) % movies.length);
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % movies.length);
   };
 
-  const handlePrev = () => {
-    setCurrentIndex((i) => (i === 0 ? movies.length - 1 : i - 1));
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + movies.length) % movies.length);
   };
+
+  const currentMovie = movies[currentIndex];
+
+  if (!currentMovie) {
+    return (
+      <div className="relative h-[70vh] bg-gradient-to-br from-gray-900 to-black flex items-center justify-center">
+        <div className="text-white text-xl">Carregando...</div>
+      </div>
+    );
+  }
+
+  const genreNames = currentMovie.genre_ids
+    .map((id) => genres[id])
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(", ");
 
   return (
-    <div className="relative touch-none " {...swipeHandlers}>
+    <div
+      {...handlers}
+      className="relative h-[70vh] overflow-hidden cursor-grab active:cursor-grabbing"
+    >
       <AnimatePresence mode="wait">
-        {movies.length > 0 && (
-          <motion.div
-            key={movies[currentIndex].id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => navigate(`/detalhes/movie/${movies[currentIndex].id}`)}
-            className="relative w-full h-screen cursor-pointer"
-          >
-            <img
-              className="absolute top-0 left-0 w-full h-full object-cover"
-              src={`https://image.tmdb.org/t/p/original${movies[currentIndex].backdrop_path}`}
-              alt={`Poster do filme ${movies[currentIndex].title}`}
-            />
-
-            <div className="absolute inset-0 flex flex-col justify-center lg:justify-end items-center lg:items-start px-4 lg:px-8 py-6 text-white text-center lg:text-left mb-16 h-full">
-              <div className="flex flex-col items-center lg:items-start">
-                <h1 className="text-3xl lg:text-4xl font-bold">
-                  {movies[currentIndex].title}
-                </h1>
-
-                <div className="flex flex-row items-center gap-2 lg:gap-4 mt-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Calendar color="#fff" />
-                    <span>
-                      {new Date(
-                        movies[currentIndex].release_date
-                      ).getFullYear()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star color="#fff" />
-                    <span>{movies[currentIndex].vote_average.toFixed(1)}</span>
-                  </div>
-                  {movies[currentIndex].runtime > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Clock color="#fff" />
-                      <span>{movies[currentIndex].runtime} min</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap justify-center lg:justify-start gap-2 mt-4">
-                  {movies[currentIndex].genre_ids.map((id) => (
-                    <span
-                      key={id}
-                      className="bg-white text-black font-bold rounded-2xl px-4 py-1"
-                    >
-                      {genres[id]}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-20 lg:mt-6 w-full flex justify-center lg:justify-start">
-                <p
-                  className="bg-black/60 p-4 rounded-xl shadow-lg max-w-[650px] text-base leading-relaxed max-h-[100px] overflow-auto"
-                  style={{
-                    scrollbarWidth: "none",
-                  }}
-                >
-                  {movies[currentIndex].overview}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
+        <motion.div
+          key={currentMovie.id}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          className="absolute inset-0"
+        >
+          <img
+            src={`https://image.tmdb.org/t/p/original${currentMovie.backdrop_path}`}
+            alt={currentMovie.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+        </motion.div>
       </AnimatePresence>
 
+      <div className="absolute inset-0 flex items-center">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl">
+            <motion.h1
+              key={`title-${currentMovie.id}`}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-4xl md:text-6xl font-bold text-white mb-4"
+            >
+              {currentMovie.title}
+            </motion.h1>
+
+            <motion.div
+              key={`info-${currentMovie.id}`}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="flex items-center space-x-4 text-gray-300 mb-4"
+            >
+              <div className="flex items-center">
+                <Star className="w-5 h-5 text-yellow-400 mr-1" />
+                <span>{currentMovie.vote_average.toFixed(1)}</span>
+              </div>
+              <div className="flex items-center">
+                <Calendar className="w-5 h-5 mr-1" />
+                <span>
+                  {new Date(currentMovie.release_date).getFullYear()}
+                </span>
+              </div>
+              {currentMovie.runtime > 0 && (
+                <div className="flex items-center">
+                  <Clock className="w-5 h-5 mr-1" />
+                  <span>{currentMovie.runtime} min</span>
+                </div>
+              )}
+            </motion.div>
+
+            {genreNames && (
+              <motion.p
+                key={`genres-${currentMovie.id}`}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-gray-400 mb-4"
+              >
+                {genreNames}
+              </motion.p>
+            )}
+
+            <motion.p
+              key={`overview-${currentMovie.id}`}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-gray-300 mb-6 line-clamp-3"
+            >
+              {currentMovie.overview}
+            </motion.p>
+
+            <motion.button
+              key={`button-${currentMovie.id}`}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              onClick={() =>
+                navigate(`/detalhes/movie/${currentMovie.id}`)
+              }
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 transition-colors"
+            >
+              <span>Ver Detalhes</span>
+              <ArrowRight className="w-5 h-5" />
+            </motion.button>
+          </div>
+        </div>
+      </div>
+
+      {/* Controles de navegação */}
       <button
-        onClick={handlePrev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full hover:bg-red-500 hover:scale-110 shadow-lg transition-transform duration-300"
+        onClick={prevSlide}
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+        aria-label="Filme anterior"
       >
-        <ArrowLeft color="#000" size={24} />
+        <ArrowLeft className="w-6 h-6" />
       </button>
 
       <button
-        onClick={handleNext}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white p-2 rounded-full hover:bg-red-500 hover:scale-110 shadow-lg transition-transform duration-300"
+        onClick={nextSlide}
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+        aria-label="Próximo filme"
       >
-        <ArrowRight color="#000" size={24} />
+        <ArrowRight className="w-6 h-6" />
       </button>
 
-      <div className="absolute bottom-1 w-full flex justify-center">
-        {movies.map((_, i) => (
-          <div
-            key={i}
-            className={`transition-all w-3 h-3 rounded-full mx-1 ${
-              currentIndex === i ? "bg-white p-2" : "bg-red-500"
+      {/* Indicadores */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+        {movies.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentIndex(index)}
+            className={`w-3 h-3 rounded-full transition-colors ${
+              index === currentIndex
+                ? "bg-white"
+                : "bg-white/50 hover:bg-white/75"
             }`}
+            aria-label={`Ir para filme ${index + 1}`}
           />
         ))}
       </div>
